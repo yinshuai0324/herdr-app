@@ -2,7 +2,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar, InputState, Input, Popup } from "gpui-base";
-import { hc, run, theme, themes, fonts, updates, telemetry, settings, layouts, shared, appHome, readTextFile, writeTextFile, playSound, props, closeOverlay, notify, window } from "herdr";
+import { hc, run, theme, themes, fonts, updates, telemetry, settings, layouts, shared, appHome, readTextFile, writeTextFile, playSound, props, closeOverlay, openOverlay, notify, window } from "herdr";
 
 const I = (name) => `frame/settings/${name}.svg`;
 
@@ -726,13 +726,21 @@ export default class Settings extends View {
 
   machines(t) {
     const version = updates().core.version;
+    const hosts = shared("lan-workspace.hosts");
+    const sharedHosts = Array.isArray(hosts) ? hosts : [];
+    const manage = (host, action) => openOverlay({
+      mod: "lan-workspace", kind: "dialog", width: 510, props: { action, hostId: host.id },
+    });
     return v_flex().w_full()
       .child(this.heading(t, "主机"))
-      .child(div().pb(8).text_size(12.5).line_height("18px").text_color(t.dim).child("通过 SSH 连接其他主机。断开连接后，远端终端仍会运行。"))
+      .child(div().pb(8).text_size(12.5).line_height("18px").text_color(t.dim).child("通过 SSH 连接其他主机，在工作区查看和操作终端。"))
       .child(this.row(t, "本机", `已连接 · ${version ? `hc ${version}` : "hc 版本未知"}`, div().w(7).h(7).rounded(4).bg(t.ansi2)))
       .children((this.machineList ?? []).map((m) => this.machineRow(t, m, version)))
+      .children(sharedHosts.map(host => this.row(t, host.name, `共享目录 · ${host.directory}`,
+        h_flex().gap(6).child(this.button(t, "st-lan-edit-" + host.id, "编辑", () => manage(host, "edit")))
+          .child(this.button(t, "st-lan-remove-" + host.id, "移除", () => manage(host, "remove"))))))
       .when(this.machineList === null && !this.machineError, (el) => el.child(h_flex().py(14).gap(8).items_center().child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12.5).text_color(t.dim).child("正在读取主机列表…"))))
-      .when(this.machineList?.length === 0, (el) => el.child(div().py(14).text_size(12.5).text_color(t.dim).child("尚未添加其他主机。")))
+      .when(this.machineList?.length === 0 && !sharedHosts.length, (el) => el.child(div().py(14).text_size(12.5).text_color(t.dim).child("尚未添加其他主机。")))
       .when(Boolean(this.machineError), (el) => el.child(div().py(10).text_size(12.5).text_color(t.blocked).child(this.machineError)))
       .when(Boolean(this.machineNotice), (el) => el.child(div().py(10).text_size(12.5).text_color(t.ansi2).child(this.machineNotice)))
       .child(h_flex().pt(16).child(this.button(t, "st-m-add", "添加主机", () => run("mod.open", { name: "machine-add" }))));

@@ -1,9 +1,9 @@
 {
   "place": "none",
-  "overlay": { "width": 510, "height": 307 },
+  "overlay": { "width": 510 },
   "palette": [
     {
-      "title": "连接并挂载本机项目",
+      "title": "选择主机并新建工作区",
       "command": "mod.open",
       "args": { "name": "lan-workspace" },
       "words": "SSH LAN SMB 共享目录 远端 主机 workspace"

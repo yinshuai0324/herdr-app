@@ -2713,23 +2713,44 @@ impl AppWindow {
     /// `machine`: another machine (`hc machine ls`). Without `folder`, it starts in the
     /// focused pane's folder when that pane is on the same machine, else in that machine's home.
     fn new_space(&mut self, name: &str, folder: Option<String>, ctx_name: Option<&str>, argv: Option<Vec<String>>, task: Option<&str>, machine: Option<String>, focus: bool, window: &Window) -> Result<Value, String> {
+        let shared = machine.as_deref().and_then(crate::lan_workspace::target_id).map(crate::lan_workspace::host).transpose()?;
         let follow = folder.is_none();
-        let on = machine.as_deref();
+        let on = machine.as_deref().filter(|_| shared.is_none());
         // The focused pane's folder only means something on its own machine.
         let here = || self.model.focused_pane().and_then(|p| self.model.address_of(&p))
             .filter(|a| a.split_once('/').map(|(m, _)| m) == on)
             .and_then(|a| self.cwds.get(&a).cloned());
-        let folder = folder.or_else(here).unwrap_or_else(|| if on.is_some() { String::new() } else { home() });
+        let (argv, folder, follow) = if let Some(host) = &shared {
+            (Some(host.launch(argv, task)?), host.directory.clone(), false)
+        } else {
+            let folder = folder.or_else(here).unwrap_or_else(|| if on.is_some() { String::new() } else { home() });
+            (Self::agent_argv(argv.clone(), task, on).or(argv), folder, follow)
+        };
         let (space, ctx, pane) = (self.model.fresh_id_on("sp", on), self.model.fresh_id_on("tb", on), self.model.fresh_id_on("p", on));
         let size = self.initial_size(&Tab::new(&ctx, "", &pane, "").root, &pane, window);
-        let (addr, folder) = self.spawn(Self::agent_argv(argv.clone(), task, on).or(argv), folder, follow, &space, &ctx, on, size, window)?;
+        let (addr, folder) = self.spawn(argv, folder, follow, &space, &ctx, on, size, window)?;
+        let name = shared.as_ref().filter(|_| name.trim().is_empty()).map_or(name, |host| &host.name);
+        let ctx_name = ctx_name.or_else(|| shared.as_ref().map(|_| "远端 SSH"));
         let ctx_name = ctx_name.map(str::trim).unwrap_or_default();
         let tab = Tab::new(&ctx, ctx_name, &pane, &addr);
         if focus { self.model.add_space(&space, name.trim(), &folder, tab) } else { self.model.add_space_unshown(&space, name.trim(), &folder, tab) }
         if let Some(p) = self.model.space_mut(&space) {
-            p.machine = machine;
+            p.machine = on.map(str::to_owned);
+            if let Some(host) = shared {
+                p.rest.insert("lanHost".into(), json!(host.id));
+            }
         }
         Ok(json!({ "space": space, "tab": ctx, "terminal": addr }))
+    }
+
+    fn shared_terminal(&self, space: &str, argv: Option<&Vec<String>>, task: Option<&str>) -> Result<Option<(Vec<String>, String)>, String> {
+        let Some(space) = self.model.space(space) else { return Ok(None) };
+        let Some(id) = space.lan_host() else { return Ok(None) };
+        let host = crate::lan_workspace::host(id)?;
+        if host.directory != space.folder {
+            return Err("共享目录已变更，请为该主机创建新的工作区。".into());
+        }
+        Ok(Some((host.launch(argv.cloned(), task)?, host.directory)))
     }
 
     /// A tab in a space (default: the shown one), shown at once unless focus is false.
@@ -2743,7 +2764,11 @@ impl AppWindow {
         let on = self.machine_of(&space);
         let (ctx, pane) = (self.model.fresh_id_on("tb", on.as_deref()), self.model.fresh_id_on("p", on.as_deref()));
         let size = self.initial_size(&Tab::new(&ctx, "", &pane, "").root, &pane, window);
-        let (addr, _) = self.spawn(Self::agent_argv(argv.clone(), task, on.as_deref()).or(argv), folder, follow, &space, &ctx, on.as_deref(), size, window)?;
+        let (argv, folder, follow) = match self.shared_terminal(&space, argv.as_ref(), task)? {
+            Some((argv, directory)) => (Some(argv), directory, false),
+            None => (Self::agent_argv(argv.clone(), task, on.as_deref()).or(argv), folder, follow),
+        };
+        let (addr, _) = self.spawn(argv, folder, follow, &space, &ctx, on.as_deref(), size, window)?;
         self.add_new_tab(&space, Tab::new(&ctx, name.trim(), &pane, &addr), focus);
         Ok(json!({ "space": space, "tab": ctx, "terminal": addr }))
     }
@@ -2788,6 +2813,10 @@ impl AppWindow {
         root.split(&target, axis, Node::block(new.clone(), Content::Terminal { terminal: String::new() }), "initial-size".into());
         let size = self.model.active_tab().filter(|tab| tab.id == ctx)
             .and_then(|_| self.initial_size(&root, &new, window));
+        let (argv, cwd, follow) = match self.shared_terminal(&space, argv.as_ref(), None)? {
+            Some((argv, directory)) => (Some(argv), directory, false),
+            None => (argv, cwd, follow),
+        };
         let (addr, _) = self.spawn(argv, cwd, follow, &space, &ctx, on.as_deref(), size, window)?;
         self.model.split(&target, axis, &new, &addr);
         Ok(json!({ "pane": new, "terminal": addr }))
@@ -3125,6 +3154,14 @@ impl AppWindow {
             crate::telemetry::command(command.name);
         }
         if name == "space.new" {
+            if person && (args.is_null() || args.as_object().is_some_and(|args| args.is_empty()))
+                && self.view_mod("lan-workspace").is_some() && crate::lan_workspace::has_hosts()
+            {
+                self.open_overlay(mods::new_overlay_id(), json!({
+                    "mod": "lan-workspace", "kind": "dialog", "width": 510, "props": {"action": "pick"}
+                }), window, cx);
+                return json!({"asked": "machine"});
+            }
             let machine = new_space_machine(&args, person, &self.model);
             if !args.is_object() { args = json!({}); }
             args["machine"] = json!(machine);
@@ -3132,7 +3169,7 @@ impl AppWindow {
         if matches!(name, "space.new" | "space.close" | "space.rename" | "space.move" | "tab.new" | "tab.close" | "tab.rename" | "tab.move" | "pane.split" | "pane.close" | "pane.swap" | "pane.rename" | "pane.resize" | "terminal.keep" | "terminal.park") {
             let node = ["id", "space", "pane"].into_iter().find_map(|k| Self::arg(&args, k));
             let target = node.and_then(|id| self.model.space(id).or_else(|| self.model.space_of(id))).or_else(|| self.model.active_space());
-            let machine = if name == "space.new" { Self::arg(&args, "machine") }
+            let machine = if name == "space.new" { Self::arg(&args, "machine").filter(|m| crate::lan_workspace::target_id(m).is_none()) }
                 else if name == "terminal.park" { Self::arg(&args, "terminal").and_then(|a| a.split_once('/').map(|(m, _)| m)) }
                 else { target.and_then(|s| s.machine.as_deref()) };
             if let Err(error) = self.require_document(machine) { return json!({"error":error}); }
@@ -4283,7 +4320,7 @@ impl AppWindow {
                         json!({ "id": c.id, "name": Model::tab_name(p, c), "active": Some(&c.id) == active.as_ref(), "settled": c.settled.is_some(), "terminals": terms })
                     })
                     .collect();
-                json!({ "id": p.id, "name": m.space_name(p, &home()), "folder": p.folder, "machine": p.machine, "active": m.active.as_deref() == Some(&p.id), "tabs": tabs })
+                json!({ "id": p.id, "name": m.space_name(p, &home()), "folder": p.folder, "machine": p.machine, "lanHost": p.lan_host(), "active": m.active.as_deref() == Some(&p.id), "tabs": tabs })
             })
             .collect();
         json!({ "spaces": spaces, "recent": m.recent })

@@ -8,7 +8,7 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView } from "gpui-base";
-import { hc, exec, home, readTextFile, theme, props, closeOverlay } from "herdr";
+import { appHome, hc, exec, home, readTextFile, theme, props, closeOverlay, openOverlay, window } from "herdr";
 
 const I = (name) => `mods/workspace-chrome/${name}.svg`;
 const shellArg = (target) => /^[a-z0-9_@%+=:,./-]+$/i.test(target) ? target : "'" + target.replace(/'/g, "'\\''") + "'";
@@ -75,6 +75,11 @@ export default class MachineAdd extends View {
     this.macs = {}; // target -> { name, core } for an added Mac
     this.opened = {};
     this.handle = cx.focus_handle();
+    this.sharedFolders = false;
+    if (window()?.platform === "macos") cx.spawn(async cx => {
+      this.sharedFolders = Boolean(await readTextFile(appHome() + "/mods/lan-workspace/runtime.json").catch(() => null));
+      cx.notify();
+    });
     cx.spawn(async (cx) => {
       this.hosts = await parseConfig(await readTextFile(`${home()}/.ssh/config`).catch(() => null));
       await this.refresh();
@@ -303,6 +308,13 @@ export default class MachineAdd extends View {
       .bg(t.popover)
       .text_color(t.foreground)
       .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("添加主机")).child(div().id("ma-esc").px(6).py(2).rounded(5).text_size(11).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click(() => this.close()).child("Esc")))
+      .when(this.sharedFolders, el => el.child(h_flex().pt(10).gap(6).items_center().text_size(12)
+        .child(div().px(10).py(5).rounded(6).bg(t.hover).child("SSH 主机"))
+        .child(div().id("ma-shared-folder").px(10).py(5).rounded(6).text_color(t.muted)
+          .cursor_pointer().hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => {
+            this.close();
+            openOverlay({ mod: "lan-workspace", kind: "dialog", width: 510, props: { action: "add" } });
+          }).child("SSH（共享目录）"))))
       .child(
         div()
           .pt(6)

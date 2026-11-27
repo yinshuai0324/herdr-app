@@ -140,6 +140,8 @@ export interface SpaceInfo {
   folder: string;
   /** The machine it lives on (`hc machine ls`), null for this one. */
   machine: string | null;
+  /** Saved shared-folder SSH host backing this workspace, if any. */
+  lanHost: string | null;
   /** The git branch of the terminal it shows first, if any. */
   branch: string | null;
   /** The shown space. */

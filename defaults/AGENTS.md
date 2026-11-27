@@ -606,6 +606,12 @@ The main ones:
   `space.close {id?, confirmed?}`, `space.rename {id?, name}` ("": Herdr's name again),
   `space.move {id, index}`, `space.select {index | id}`, `space.next`, `space.prev`.
   With no `argv`, the target core chooses that machine's default shell (PowerShell 7 when available on Windows).
+- On the Mac LAN workbench, save an “SSH（共享目录）” host in “添加主机” and
+  select it when creating a workspace. Use `space.new {machine: "lan:<id>"}`
+  from scripts, with the host ID from shared `lan-workspace.hosts`.
+  Its embedded terminals, tabs and splits open over SSH in the saved SMB
+  project. The local project path is fixed by the saved host. `spaces()`
+  identifies this kind of workspace with `lanHost`.
 - Tabs: `tab.new {name?, space?, folder?, argv?, task?, focus?}` (argv: an
   agent to run, task: its first message). Agents run in your interactive
   shell (including fish), which stays open after the agent exits. A terminal

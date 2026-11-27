@@ -73,6 +73,12 @@ still fails.
 `hc machine ls` lists machines. Use `hc run --on vps ...`, `hc exec --on vps ...`
 and `hc file ... --on vps ...` for remote work, not your local file tools.
 
+In the Mac LAN workbench, `herdr-app do space.new --machine 'lan:<id>'`
+selects a saved shared-folder SSH host. `herdr-app ls` reports the host ID
+as `lanHost` on an existing workspace. Its wrapped terminals, tabs and
+splits run on the SSH host in the SMB mount. The workspace's folder is
+the project on the local Mac. It is set by the host entry.
+
 `do` accepts `--key value` arguments (JSON for arrays/objects) or one JSON
 object. Unknown argument names fail and list valid names. Target IDs (`id`,
 `pane`, `space`, `target`, `terminal`) must be strings; other non-null types fail before

@@ -15,7 +15,7 @@ function setup(result: any) {
   const values = {
     View: class {}, div() {}, svg() {}, TextView: {}, v_flex() {}, h_flex() {},
     InputState: { new: () => ({ on() {}, focus() {}, set_value() {} }) }, Input: {},
-    home: () => "/home/test", readTextFile: async () => null,
+    home: () => "/home/test", readTextFile: async () => null, window: () => null,
     theme() {}, props: () => ({}), closeOverlay() {},
     openOverlay: (...args: unknown[]) => overlays.push(args),
     exec: async (_cmd: string, _args: string[], options: any) => {

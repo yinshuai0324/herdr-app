@@ -23,18 +23,20 @@ const source = await readFile(new URL("../defaults/mods/picker/main.js", import.
 const element = () => new Element();
 const commands: unknown[][] = [];
 let testSpaces: any[] = [];
+let testSharedHosts: any[] = [];
 let closed = 0;
 const values: Record<string, any> = {
   View: class {}, div: element, svg: element, v_flex: element, h_flex: element,
   Input: { new: element }, InputState: { new: () => ({ handlers: {} as Record<string, any>, on(name: string, handler: any) { this.handlers[name] = handler; }, focus() {} }) },
   agents: () => [], spaces: () => testSpaces, terminals: () => [], theme: () => ({ hover: "hover" }),
-  settings: () => ({ zoom: 1.2 }), props: () => ({}), shared: () => ({}),
+  settings: () => ({ zoom: 1.2 }), props: () => ({}), shared: (key: string) => key === "lan-workspace.hosts" ? testSharedHosts : {},
   setShared() {}, closeOverlay() { closed++; }, openOverlay() {}, run(...args: unknown[]) { commands.push(args); }, hc() {},
 };
 const Picker = new Function(...Object.keys(values), source.replace(/^import .*;\n/gm, "").replace("export default class Picker", "return class Picker"))(...Object.values(values));
 const cx = { notify() {}, stop_propagation() {}, timer: { after() {} }, focus_handle() {}, spawn() {} };
 function picker(machines = 12) {
   testSpaces = [];
+  testSharedHosts = [];
   closed = 0;
   const view = new Picker();
   view.init({}, cx);
@@ -85,6 +87,16 @@ test("picker space choices explicitly target this computer or the selected machi
     ["space.new", { machine: "" }],
     ["space.new", { machine: "cloud" }],
   ]);
+});
+
+test("a saved shared-folder host appears and starts its own workspace", () => {
+  const view = picker(1);
+  testSharedHosts = [{ id: "fixture", name: "project · dev@192.168.1.2", directory: "/src/project" }];
+  const row = find(view.render(), "pk-space-lan:fixture");
+  expect(row).toBeDefined();
+  commands.length = 0;
+  row.calls.on_click[0]();
+  expect(commands).toEqual([["space.new", { machine: "lan:fixture" }]]);
 });
 
 test("picker arrows reach earlier and Enter unfolds without closing or losing selection", () => {

@@ -107,6 +107,10 @@ export default class Picker extends View {
     out.push({ kind: "new" });
     out.push({ kind: "space", machine: null });
     for (const m of this.machines) out.push({ kind: "space", machine: m });
+    const sharedHosts = shared("lan-workspace.hosts");
+    if (Array.isArray(sharedHosts)) {
+      for (const host of sharedHosts) out.push({ kind: "space", machine: "lan:" + host.id, sharedHost: host });
+    }
     return out;
   }
 
@@ -193,7 +197,7 @@ export default class Picker extends View {
       }
       const on = r === sel;
       if (r.kind === "new" || r.kind === "space") {
-        const label = r.kind === "new" ? "新建标签页" : r.machine ? `在以下主机新建工作区：${r.machine}` : "新建工作区";
+        const label = r.kind === "new" ? "新建标签页" : r.machine ? `在 ${r.sharedHost?.name ?? r.machine} 新建工作区` : "新建工作区";
         return h_flex()
           .id(r.kind === "new" ? "pk-new" : `pk-space-${r.machine ?? "here"}`)
           .mx(4)
@@ -209,7 +213,8 @@ export default class Picker extends View {
           .hover((s) => s.bg(t.hover))
           .on_click(() => this.go(r))
           .child(div().w(12).child("+"))
-          .child(label);
+          .child(div().flex_1().truncate().child(label))
+          .when(Boolean(r.sharedHost), el => el.child(div().text_size(10.5).text_color(t.dim).child("共享目录")));
       }
       const who = r.mine.map((a) => a.program?.name ?? "代理").join(" · ");
       const here = r.w.active && r.ctx.active;

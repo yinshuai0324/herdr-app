@@ -45,6 +45,15 @@ pub struct Space {
     pub rest: serde_json::Map<String, serde_json::Value>,
 }
 
+impl Space {
+    pub fn lan_host(&self) -> Option<&str> {
+        if self.machine.is_some() {
+            return None;
+        }
+        self.rest.get("lanHost").and_then(Value::as_str)
+    }
+}
+
 /// A closed space, so opening it again doesn't ask for its name.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Recent {
@@ -696,6 +705,7 @@ pub fn space_json(m: &Model, p: &Space, index: usize, branch: Option<&str>, home
         "named": !p.name.is_empty(),
         "folder": p.folder,
         "machine": p.machine,
+        "lanHost": p.lan_host(),
         "branch": branch,
         "active": m.active.as_deref() == Some(&p.id),
         "status": m.rollup(&all),

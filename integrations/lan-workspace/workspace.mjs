@@ -2,6 +2,7 @@ import { realpath, stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { LanSmbMount } from './lan-smb-mount.mjs'
+import { quoteShell } from './shell.mjs'
 import { connectSsh, endpoint } from './ssh.mjs'
 
 const input = process.stdin
@@ -47,9 +48,10 @@ function terminalSize() {
   return { cols: output.columns || 80, rows: output.rows || 24, term: 'xterm-256color' }
 }
 
-function openTerminal(client, shellDirectory, signal) {
+function openTerminal(client, shellDirectory, argv, signal) {
   return new Promise((resolve, reject) => {
-    const command = `${shellDirectory} && exec "\${SHELL:-/bin/sh}" -i`
+    const start = argv?.length ? argv.map(quoteShell).join(' ') : '"${SHELL:-/bin/sh}" -i'
+    const command = `${shellDirectory} && exec ${start}`
     client.exec(command, { pty: terminalSize() }, (error, channel) => {
       if (error) return reject(error)
       if (signal.aborted) {
@@ -119,7 +121,7 @@ export async function runWorkspace(config) {
     await mount.open(directory)
     signal.throwIfAborted()
     output.write('共享目录已挂载。现在可运行远端已有的 CLI。\n')
-    return await openTerminal(client, mount.shellDirectory, signal)
+    return await openTerminal(client, mount.shellDirectory, config.argv, signal)
   } finally {
     client?.off('close', stopOnHangup)
     await mount?.close()

@@ -1,7 +1,8 @@
 import { View, div } from "gpui-kit";
 import { Input, InputState, h_flex, v_flex } from "gpui-base";
-import { appHome, closeOverlay, pickFolder, props, readTextFile, run, theme } from "herdr";
+import { closeOverlay, machines, openOverlay, pickFolder, props, run, setShared, shared, theme } from "herdr";
 
+const hostsKey = "lan-workspace.hosts";
 const storageKey = "last-project";
 const fields = {
   host: ["IP 地址", "192.168.1.20"],
@@ -18,18 +19,37 @@ function button(id, label, primary, action) {
     .cursor_pointer().hover(style => style.opacity(0.88)).on_click(action).child(label);
 }
 
+function hosts() {
+  const entries = shared(hostsKey);
+  return Array.isArray(entries) ? entries : [];
+}
+
+function validAddress(host) {
+  if (host.includes(":")) return /^[a-f0-9:.]+(?:%[a-z0-9_.-]+)?$/i.test(host);
+  const parts = host.split(".");
+  return parts.length === 4 && parts.every(part => /^(0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
+}
+
 export default class LanWorkspace extends View {
   init(_props, cx) {
-    let prior;
-    try { prior = JSON.parse(localStorage.getItem(storageKey) || "{}"); }
-    catch { prior = {}; }
+    const p = props();
+    this.action = p?.action ?? "pick";
+    this.entry = hosts().find(host => host.id === p?.hostId);
+    this.handle = cx.focus_handle();
+    this.handle.focus();
+    this.at = 0;
+    if (this.action !== "add" && this.action !== "edit") return;
+    let prior = this.entry;
+    if (!prior) {
+      try { prior = JSON.parse(localStorage.getItem(storageKey) || "{}"); }
+      catch { prior = {}; }
+    }
     this.inputs = Object.fromEntries(Object.entries(fields).map(([key, [_label, placeholder]]) => {
-      const state = InputState.new({ value: prior[key] ?? (key === "port" ? "22" : ""), placeholder });
-      state.on("submit", () => this.connect(cx));
+      const state = InputState.new({ value: String(prior[key] ?? (key === "port" ? "22" : "")), placeholder });
+      state.on("submit", (_event, cx) => this.save(cx));
       return [key, state];
     }));
-    this.busy = false;
-    this.remember = prior.remember === true;
+    this.remember = this.entry?.remember ?? true;
     this.error = "";
     this.inputs.host.focus();
   }
@@ -46,40 +66,82 @@ export default class LanWorkspace extends View {
     });
   }
 
-  connect(cx) {
-    if (this.busy) return;
+  save(cx) {
     const values = Object.fromEntries(Object.entries(this.inputs).map(([key, field]) => [key, field.value().trim()]));
     const { host, username, port, directory } = values;
-    if (!host || !username || !/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535 || !directory.startsWith("/")) {
-      this.error = "请填写 IP、用户名和端口，并选择本机项目。";
+    if (!validAddress(host) || !/^[a-zA-Z0-9._-]{1,64}$/.test(username) ||
+        !/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535 ||
+        !directory.startsWith("/") || directory === "/") {
+      this.error = "请填写有效的 IP、SSH 用户名和端口，并选取本机项目目录。";
       cx.notify();
       return;
     }
-    this.error = "";
-    this.busy = true;
-    cx.notify();
-    cx.spawn(async cx => {
-      try {
-        const runtime = JSON.parse(await readTextFile(appHome() + "/mods/lan-workspace/runtime.json"));
-        const project = { ...values, remember: this.remember };
-        localStorage.setItem(storageKey, JSON.stringify(project));
-        const name = directory.split("/").filter(Boolean).pop() || "共享项目";
-        closeOverlay(props().overlay);
-        run("space.new", {
-          name: name + " · " + host,
-          folder: directory,
-          machine: "",
-          tab: "远端 SSH",
-          argv: [runtime.node, runtime.workspace, JSON.stringify({
-            ...project, keychain: runtime.keychain, stateDir: runtime.stateDir, smbServer: runtime.smbServer,
-          })],
-        });
-      } catch {
-        this.error = "无法读取共享目录运行配置，请用 Herdr 局域网启动器打开。";
-        this.busy = false;
-        cx.notify();
-      }
-    });
+    const all = hosts();
+    if (all.some(row => row.id !== this.entry?.id && row.host === host && row.username === username &&
+        row.port === Number(port) && row.directory === directory)) {
+      this.error = "此主机和共享目录已经添加。";
+      cx.notify();
+      return;
+    }
+    const project = directory.split("/").filter(Boolean).pop() || "共享项目";
+    const endpoint = Number(port) === 22 ? host : (host.includes(":") ? `[${host}]:${Number(port)}` : `${host}:${Number(port)}`);
+    const entry = {
+      id: this.entry?.id ?? Date.now().toString(36) + "-" + Math.random().toString(36).slice(2),
+      name: `${project} · ${username}@${endpoint}`,
+      host, username, port: Number(port), directory, remember: this.remember,
+    };
+    setShared(hostsKey, this.entry ? all.map(row => row.id === entry.id ? entry : row) : [...all, entry]);
+    localStorage.setItem(storageKey, JSON.stringify(values));
+    this.close();
+  }
+
+  close() {
+    closeOverlay(props().overlay);
+  }
+
+  targets() {
+    return [
+      { machine: "", title: "本机" },
+      ...machines().filter(machine => machine.name && machine.layout === "ready")
+        .map(machine => ({ machine: machine.name, title: machine.name })),
+      ...hosts().map(host => ({ machine: "lan:" + host.id, title: host.name, detail: host.directory })),
+      { title: "添加主机…" },
+    ];
+  }
+
+  select(target) {
+    this.close();
+    if (target.machine === undefined) run("mod.open", { name: "machine-add" });
+    else run("space.new", { machine: target.machine });
+  }
+
+  key(event, cx) {
+    if (event.key === "escape") this.close();
+    else if (this.action === "pick") {
+      const targets = this.targets();
+      this.at = Math.min(this.at, targets.length - 1);
+      if (event.key === "enter") this.select(targets[this.at]);
+      else if (event.key === "up") this.at = (this.at + targets.length - 1) % targets.length;
+      else if (event.key === "down") this.at = (this.at + 1) % targets.length;
+      else return;
+      cx.notify();
+    } else return;
+    cx.stop_propagation();
+  }
+
+  picker(t) {
+    return v_flex().min_h(0).gap(8)
+      .child(div().text_size(16).font_semibold().child("新建工作区"))
+      .child(div().text_size(12).text_color(t.muted).child("选择终端运行的主机"))
+      .child(v_flex().id("lan-targets").max_h(350).min_h(0).gap(2).overflow_y_scroll()
+        .children(this.targets().map((target, index) => h_flex().id("lan-target-" + (target.machine ?? "add"))
+          .px(10).py(7).gap(8).items_center().rounded(7)
+          .when(index === this.at, el => el.bg(t.hover))
+          .cursor_pointer().hover(s => s.bg(t.hover)).on_click(() => this.select(target))
+          .child(v_flex().flex_1().min_w(0).gap(3)
+            .child(div().truncate().text_size(13).child(target.title))
+            .when(Boolean(target.detail), el => el.child(div().truncate().text_size(11).text_color(t.muted).child(target.detail))))
+          .when(Boolean(target.detail), el => el.child(div().text_size(11).text_color(t.muted).child("共享目录"))))));
   }
 
   field(key, accessory) {
@@ -94,10 +156,33 @@ export default class LanWorkspace extends View {
 
   render() {
     const t = theme();
-    const p = props();
-    return v_flex().id("lan-workspace").w_full().min_h(0).p(18).gap(12)
-      .bg(t.popover).text_color(t.foreground)
-      .child(div().text_size(16).font_semibold().child("连接并挂载本机项目"))
+    const root = v_flex().id("lan-workspace").w_full().min_h(0).p(18).gap(12)
+      .track_focus(this.handle).on_key_down((event, cx) => this.key(event, cx))
+      .bg(t.popover).text_color(t.foreground);
+    if (this.action === "pick") return root.child(this.picker(t));
+    if ((this.action === "edit" || this.action === "remove") && !this.entry) {
+      return root.child(div().text_size(13).child("找不到该共享目录主机。"))
+        .child(h_flex().justify_end().child(button("lan-close", "关闭", false, () => this.close())));
+    }
+    if (this.action === "remove") {
+      return root.child(div().text_size(16).font_semibold().child("移除共享目录主机？"))
+        .child(div().text_size(12).text_color(t.muted).child(this.entry.name))
+        .child(h_flex().justify_end().gap(8)
+          .child(button("lan-cancel", "取消", false, () => this.close()))
+          .child(button("lan-remove", "移除", true, () => {
+            setShared(hostsKey, hosts().filter(row => row.id !== this.entry.id));
+            this.close();
+          })));
+    }
+    return root
+      .child(div().text_size(16).font_semibold().child(this.action === "edit" ? "编辑共享目录主机" : "添加主机"))
+      .when(this.action === "add", el => el.child(h_flex().gap(6).items_center().text_size(12)
+        .child(div().id("lan-ordinary-ssh").px(10).py(5).rounded(6).cursor_pointer().text_color(t.muted)
+          .hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => {
+            this.close();
+            run("mod.open", { name: "machine-add" });
+          }).child("SSH 主机"))
+        .child(div().px(10).py(5).rounded(6).bg(t.hover).child("SSH（共享目录）"))))
       .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
       .child(h_flex().id("lan-remember").items_center().gap(8).cursor_pointer()
@@ -106,9 +191,9 @@ export default class LanWorkspace extends View {
           .text_size(12).text_color(t.accent).child(this.remember ? "✓" : ""))
         .child(div().text_size(12).child("在这台 Mac 上记住 SSH 密码")))
       .child(div().text_size(12).text_color(this.error ? t.blocked : t.muted)
-        .child(this.error || "首次连接时，在工作区终端确认 SSH 指纹并输入密码。"))
+        .child(this.error || "在新建工作区时选择此主机。首次连接请在终端确认 SSH 指纹并输入密码。"))
       .child(h_flex().justify_end().gap(8)
-        .child(button("lan-cancel", "取消", false, () => closeOverlay(p.overlay)))
-        .child(button("lan-connect", this.busy ? "正在打开…" : "连接并挂载", true, (_event, cx) => this.connect(cx))));
+        .child(button("lan-cancel", "取消", false, () => this.close()))
+        .child(button("lan-save", "保存主机", true, (_event, cx) => this.save(cx))));
   }
 }
