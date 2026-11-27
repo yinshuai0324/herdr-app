@@ -123,7 +123,7 @@ pub fn started(first_install: bool) {
     let mut launch = LAUNCH.lock().unwrap();
     if launch.is_some() { return; }
     let record = std::fs::read(path("update-notes.json")).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
-    let state = Launch::new(record, env!("CARGO_PKG_VERSION"), first_install);
+    let state = Launch::new(record, crate::APP_VERSION, first_install);
     save(&state.record);
     *launch = Some(state);
     std::thread::spawn(|| fetch_media(&all()));

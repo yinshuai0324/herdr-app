@@ -772,6 +772,7 @@ export default class Settings extends View {
 
   updates(t) {
     const u = updates();
+    const coreChecks = u.core_checks ?? u.checks;
     const at = (secs) => {
       const d = new Date(secs * 1000);
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -804,16 +805,16 @@ export default class Settings extends View {
         : [result, check("st-check-app")];
     const c = u.core;
     const core = c.managed
-      ? [`由 ${c.managed} 管理，请使用对应工具更新。${c.ready ? ` ${c.ready} 可更新。` : ""}`, u.checks ? check("st-check-core") : null]
+      ? [`由 ${c.managed} 管理，请使用对应工具更新。${c.ready ? ` ${c.ready} 可更新。` : ""}`, coreChecks ? check("st-check-core") : null]
       : c.updating
         ? ["正在更新，终端保持运行。", null]
         : c.error
           ? [`更新失败：${c.error}`, primary("st-core-retry", "重试", () => run("app.update_core"))]
           : c.ready
             ? [`${c.ready} 已就绪，更新期间终端保持运行。`, primary("st-core-update", "更新 herdr-core", () => run("app.update_core"))]
-            : u.checks
+            : coreChecks
               ? [result, check("st-check-core")]
-              : ["源码构建版通过 Git 获取更新。", null];
+              : [u.app.channel === "duodian" ? "终端运行时可独立更新。" : "源码构建版通过 Git 获取更新。", null];
     return v_flex()
       .w_full()
       .child(this.heading(t, "多点终端"))
@@ -823,7 +824,8 @@ export default class Settings extends View {
       .child(div().h(18))
       .child(this.heading(t, "herdr-core"))
       .child(this.row(t, `herdr-core ${c.version ?? ""}`, core[0], core[1] ?? div()))
-      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("多点终端每小时检查应用和运行时的更新，并在窗口角落提示。herdr-core 更新期间，终端保持运行。"));
+      .when(u.app.channel === "duodian", el => el.child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim)
+        .child("多点终端从自己的发布通道检查更新。")));
   }
 
 

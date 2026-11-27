@@ -20,6 +20,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Condvar, Mutex};
 use std::time::Duration;
 
+mod duodian;
+pub use duodian::{init_duodian_home, prepare_duodian_launch};
+
 const EVERY: Duration = Duration::from_secs(60 * 60);
 /// After a failed check or download (offline, a damaged file).
 const RETRY: Duration = Duration::from_secs(30 * 60);
@@ -120,18 +123,27 @@ pub fn set_core(version: Option<String>, managed: Option<String>) {
 }
 
 fn checks_app() -> Option<PathBuf> {
-    root().filter(|_| option_env!("HERDR_APP_RELEASE").is_some() || std::env::var_os("HERDR_RELEASES_URL").is_some())
+    root().filter(|root| {
+        if duodian::is_install(root) {
+            duodian::configured(root)
+        } else {
+            option_env!("HERDR_APP_RELEASE").is_some() || std::env::var_os("HERDR_RELEASES_URL").is_some()
+        }
+    })
 }
 
 /// A release build checks the core; a source build only when pointed at a test release server.
 fn checks_core() -> bool {
-    option_env!("HERDR_APP_RELEASE").is_some() || std::env::var_os("HERDR_RELEASES_URL").is_some()
+    !root().as_deref().is_some_and(duodian::is_install)
+        && (option_env!("HERDR_APP_RELEASE").is_some() || std::env::var_os("HERDR_RELEASES_URL").is_some())
 }
 
 /// For the settings screen: both programs, what's waiting, when we last looked.
 pub fn status() -> serde_json::Value {
     serde_json::json!({
-        "app": { "version": env!("CARGO_PKG_VERSION"), "ready": ready(), "updates": checks_app().is_some() },
+        "app": { "version": crate::APP_VERSION, "ready": ready(), "updates": checks_app().is_some(),
+                 "channel": root().as_deref().filter(|root| duodian::configured(root)).map(|_| "duodian") },
+        "core_checks": checks_core(),
         "notes": crate::update_notes::notes(ready().as_deref()),
         "core": core(),
         "checked": *CHECKED.lock().unwrap(),
@@ -263,7 +275,7 @@ pub fn update_core() {
 
 /// Downloads the latest release if it's newer. Ok(Some): a version is ready.
 fn check(root: &Path) -> Result<Option<String>, String> {
-    check_from(root, &releases())
+    if duodian::is_install(root) { duodian::check(root) } else { check_from(root, &releases()) }
 }
 
 fn check_from(root: &Path, releases: &str) -> Result<Option<String>, String> {
@@ -271,7 +283,7 @@ fn check_from(root: &Path, releases: &str) -> Result<Option<String>, String> {
     let text = curl_text(&format!("{releases}/{path}"))?;
     let manifest: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{path}: {e}"))?;
     let version = manifest["version"].as_str().ok_or(format!("{path}: no version"))?;
-    if !newer(version, env!("CARGO_PKG_VERSION")) {
+    if !newer(version, crate::APP_VERSION) {
         return Ok(None);
     }
     // Notes are optional: a missing feed must never hold up the update.
@@ -280,7 +292,6 @@ fn check_from(root: &Path, releases: &str) -> Result<Option<String>, String> {
     {
         crate::update_notes::cache(&text);
     }
-    let staged = beside(root, ".new");
     if staged_version(root).as_deref() == Some(version) {
         return Ok(Some(version.to_owned()));
     }
@@ -288,11 +299,20 @@ fn check_from(root: &Path, releases: &str) -> Result<Option<String>, String> {
     let (Some(url), Some(sha)) = (entry["url"].as_str(), entry["sha256"].as_str()) else {
         return Ok(None);
     };
-    tracing::info!("downloading Herdr {version}");
+    stage(root, version, url, sha, None)
+}
+
+fn stage(root: &Path, version: &str, url: &str, sha: &str, duodian_config: Option<&duodian::Config>) -> Result<Option<String>, String> {
+    tracing::info!("downloading {} {version}", crate::PRODUCT_NAME);
+    let staged = beside(root, ".new");
     let work = beside(root, ".download");
     let _ = std::fs::remove_dir_all(&work);
     std::fs::create_dir_all(&work).map_err(|e| format!("{}: {e}", work.display()))?;
-    let result = unpack(url, sha, &work).and_then(|unpacked| {
+    let result = if let Some(config) = duodian_config {
+        duodian::unpack(url, sha, &work, config)
+    } else {
+        unpack(url, sha, &work)
+    }.and_then(|unpacked| {
         if version_of(&unpacked).as_deref() != Some(version) {
             return Err(format!("the download doesn't run as {version}"));
         }
@@ -300,7 +320,9 @@ fn check_from(root: &Path, releases: &str) -> Result<Option<String>, String> {
         let _ = std::fs::remove_dir_all(&staged);
         std::fs::rename(&unpacked, &staged).map_err(|e| format!("{}: {e}", staged.display()))?;
         // Outside the bundle: writing a receipt must not change its signature.
-        std::fs::write(beside(root, ".new.json"), serde_json::json!({ "version": version }).to_string()).map_err(|e| e.to_string())
+        std::fs::write(beside(root, ".new.json"), serde_json::json!({
+            "version": version, "channel": duodian_config.map(|_| "duodian"),
+        }).to_string()).map_err(|e| e.to_string())
     });
     let _ = std::fs::remove_dir_all(&work);
     result.map(|()| Some(version.to_owned()))
@@ -421,9 +443,16 @@ pub(crate) fn newer(a: &str, b: &str) -> bool {
 fn staged_version(root: &Path) -> Option<String> {
     let staged = beside(root, ".new");
     let receipt = beside(root, ".new.json");
-    let version = std::fs::read(&receipt).ok().and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
-        .and_then(|value| value["version"].as_str().map(str::to_owned));
-    let version = version?;
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&receipt).ok()?).ok()?;
+    let version = value["version"].as_str()?.to_owned();
+    if duodian::is_install(root)
+        && (value["channel"] != "duodian" || duodian::validate_stage(root, &staged).is_err())
+    {
+        tracing::warn!("update: staged bundle does not belong to the 多点终端 channel");
+        let _ = std::fs::remove_file(receipt);
+        let _ = std::fs::remove_dir_all(&staged);
+        return None;
+    }
     if version_of(&staged).as_deref() != Some(&version) {
         tracing::warn!("update: staged executable does not match its verified manifest; discarding it");
         let _ = std::fs::remove_file(receipt);
@@ -464,14 +493,14 @@ pub fn apply_on_startup() -> bool {
         // SAFETY: startup runs before any app threads. Do not leak the guard
         // into the core's environment and every terminal it later starts.
         unsafe { std::env::remove_var("HERDR_APP_UPDATE_EXPECTED") };
-        if expected != env!("CARGO_PKG_VERSION") {
-            tracing::warn!("update: relaunched as {}, expected {expected}; not retrying", env!("CARGO_PKG_VERSION"));
+        if expected != crate::APP_VERSION {
+            tracing::warn!("update: relaunched as {}, expected {expected}; not retrying", crate::APP_VERSION);
         }
         return false;
     }
     let Some(root) = checks_app() else { return false };
     let staged = staged_version(&root);
-    let Some(version) = startup_target(env!("CARGO_PKG_VERSION"), staged.as_deref(), expected.as_deref()) else { return false };
+    let Some(version) = startup_target(crate::APP_VERSION, staged.as_deref(), expected.as_deref()) else { return false };
     if swap(&root).is_err() {
         return false;
     }
@@ -483,9 +512,9 @@ pub fn apply_on_startup() -> bool {
 /// Windows lets a running program's folder be renamed, not deleted: the old
 /// one goes on the next start (`after_update`).
 pub fn apply() -> std::io::Result<bool> {
-    let Some(root) = root() else { return Ok(false) };
+    let Some(root) = checks_app() else { return Ok(false) };
     let staged = staged_version(&root);
-    if ready().as_deref() != staged.as_deref() || !staged.as_deref().is_some_and(|version| newer(version, env!("CARGO_PKG_VERSION"))) {
+    if ready().as_deref() != staged.as_deref() || !staged.as_deref().is_some_and(|version| newer(version, crate::APP_VERSION)) {
         return Ok(false);
     }
     swap(&root).map(|()| true)
@@ -508,7 +537,7 @@ fn swap(root: &Path) -> std::io::Result<()> {
     }
     let _ = std::fs::remove_file(beside(root, ".new.json"));
     *READY.lock().unwrap() = None;
-    let _ = std::fs::write(marker(), "");
+    if !duodian::is_install(root) { let _ = std::fs::write(marker(), ""); }
     Ok(())
 }
 
@@ -589,6 +618,9 @@ fn marker() -> PathBuf {
 /// Cores before 0.1.5 lack `--version`: they keep their same-generation update
 /// path. A core a package manager owns is left alone.
 pub fn after_update(connected: std::sync::Arc<crate::hc::Core>) {
+    if root().as_deref().is_some_and(duodian::is_install) {
+        return;
+    }
     if std::fs::remove_file(marker()).is_err() {
         return;
     }

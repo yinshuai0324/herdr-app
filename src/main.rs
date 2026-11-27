@@ -45,6 +45,10 @@ mod window;
 use gpui::*;
 
 pub const PRODUCT_NAME: &str = "多点终端";
+pub const APP_VERSION: &str = match option_env!("DUODIAN_APP_VERSION") {
+    Some(version) => version,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 const HELP: &str = "\
 herdr-app: the 多点终端 desktop app. With no arguments it opens the window.
@@ -95,6 +99,7 @@ fn link_check_path(args: &[String]) -> Option<&std::path::Path> {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    update::init_duodian_home();
     #[cfg(target_os = "macos")]
     macos_check::startup(&args);
     #[cfg(windows)]
@@ -131,7 +136,7 @@ fn main() {
         None => {}
         Some("-h" | "--help" | "help") => return print!("{HELP}"),
         Some("--skill") => return print!("{}", include_str!("SKILL.md")),
-        Some("-V" | "--version" | "version") => return println!("herdr-app {}", env!("CARGO_PKG_VERSION")),
+        Some("-V" | "--version" | "version") => return println!("herdr-app {APP_VERSION}"),
         Some(other) => {
             eprint!("herdr-app: unknown argument {other:?}\n\n{HELP}");
             std::process::exit(2);
@@ -151,6 +156,9 @@ fn main() {
     update::leave_install_folder();
     if update::apply_on_startup() {
         return;
+    }
+    if let Err(error) = update::prepare_duodian_launch() {
+        tracing::error!("多点终端运行环境：{error}");
     }
 
     telemetry::clock();

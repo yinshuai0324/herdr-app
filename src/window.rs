@@ -3830,8 +3830,8 @@ impl AppWindow {
                     Ok(true) => {}
                     Ok(false) => return self.fail("no update is ready yet"),
                     Err(error) => {
-                        let reason = format!("Couldn't replace Herdr's files: {error}.");
-                        return self.fail(if cfg!(windows) { format!("Close Herdr's terminals (or restart Windows) and try again. {reason}") } else { reason });
+                        let reason = format!("无法替换{}的应用文件。{error}", crate::PRODUCT_NAME);
+                        return self.fail(if cfg!(windows) { format!("关闭终端或重启 Windows 后再试。{reason}") } else { reason });
                     }
                 }
                 self.drain_documents(window, cx);
@@ -5211,7 +5211,7 @@ impl AppWindow {
         let app_version = crate::update::ready();
         let app_ready = app_version.is_some();
         let success = self.update_ready.is_none() && self.update_success;
-        let label = self.update_ready.clone().or_else(|| success.then(|| format!("已更新到 {}", env!("CARGO_PKG_VERSION"))))?;
+        let label = self.update_ready.clone().or_else(|| success.then(|| format!("已更新到 {}", crate::APP_VERSION)))?;
         let dismissal = app_version.map(|v| format!("app:{v}")).unwrap_or_else(|| label.clone());
         if self.update_dismissed.as_ref() == Some(&dismissal) { return None; }
         let pill = div()

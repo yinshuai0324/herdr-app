@@ -46,3 +46,21 @@ present on the remote Mac.
 
 The SMB helper and its build and mount code are adapted from the Orca LAN
 workspace prototype. See [ORCA-LICENSE](ORCA-LICENSE).
+
+## 多点终端更新源
+
+发布脚本在 Apple Silicon Mac 上从当前源码构建并签名。每次发布使用比上次更高的三段数字版本号。版本号由发布脚本传入应用，独立于上游的 Cargo 版本。
+
+```sh
+integrations/lan-workspace/publish-macos.zsh <版本号> <更新源目录> <签名私钥路径>
+```
+
+首次发布先用 `openssl ecparam -name prime256v1 -genkey -noout` 创建签名私钥，并以当前用户私有的权限保管。发布脚本把公钥放进应用。请用同一把私钥签后续版本。
+
+不传第四个参数时，安装包绑定本机目录。当前工作台使用
+`~/Library/Application Support/Herdr LAN Workspace/update-feed`。
+如需内网共享，首次为该通道打包时传入静态站点的 HTTPS 根地址作为第四个参数。先上传
+`app/<版本号>/` 内的安装包，再发布 `app/latest.json`。私钥留在发布机。
+
+首次安装使用可信渠道交付的多点终端安装包。此后在「设置 → 更新」点击「立即检查」，下载完成后点「重启并更新」。
+安装包携带同版本的公司内部登录扩展和挂载运行时，主机列表、终端布局与 SSH 信任记录保存在工作台配置目录，密码由本机钥匙串管理。

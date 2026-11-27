@@ -8,13 +8,21 @@ profile="${HERDR_LAN_HOME:?HERDR_LAN_HOME must point at a dedicated Herdr profil
 installed_app="${HERDR_LAN_APP:-/Applications/Herdr.app}"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+release_app="$profile/$product_name.app"
+if [[ -f "$release_app/Contents/Resources/duodian-update.json" ]]; then
+  if [[ "${1:-}" == '--prepare' ]]; then
+    print -u2 '此工作台使用多点终端更新源，请发布新版后从应用内更新。'
+    exit 1
+  fi
+  open_flags=(-n)
+  if [[ "${1:-}" == '--background' ]]; then open_flags+=(-g -j); fi
+  exec /usr/bin/open "${open_flags[@]}" -a "$release_app" --env "HERDR_APP_HOME=${profile:A}" \
+    --stdout "$profile/app-stdout.log" --stderr "$profile/app-stderr.log"
+fi
+
 node_binary="$(command -v node || true)"
 if [[ -z "$node_binary" ]]; then
   print -u2 '启动器需要 Node.js 22 或更新版本。'
-  exit 1
-fi
-if ! [[ -x "$installed_app/Contents/MacOS/Herdr" ]]; then
-  print -u2 '找不到 Herdr.app。'
   exit 1
 fi
 if ! command -v hc >/dev/null; then
@@ -81,6 +89,10 @@ fs.writeFileSync(path.join(profile, 'mods/lan-workspace/runtime.json'), JSON.str
 }), { mode: 0o600 })
 NODE
 if [[ "${1:-}" == '--prepare' ]]; then exit 0; fi
+if ! [[ -x "$installed_app/Contents/MacOS/Herdr" ]]; then
+  print -u2 '找不到 Herdr.app。'
+  exit 1
+fi
 if env HERDR_APP_HOME="$profile" "$installed_app/Contents/MacOS/Herdr" status >/dev/null 2>&1; then
   print "$product_name 已经打开。"
   exit 0
