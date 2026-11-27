@@ -62,5 +62,10 @@ integrations/lan-workspace/publish-macos.zsh <版本号> <更新源目录> <签�
 如需内网共享，首次为该通道打包时传入静态站点的 HTTPS 根地址作为第四个参数。先上传
 `app/<版本号>/` 内的安装包，再发布 `app/latest.json`。私钥留在发布机。
 
+公开下载也可以用 GitHub Releases。打包时将 `https://github.com/所有者/仓库` 作为第四个参数，
+再把 `app/<版本号>/` 中的 `duodian-latest.json` 和
+`duodian-macos-aarch64.tar.gz` 一起上传到 `v<版本号>` 的正式 Release。
+切换来源时，首次安装绑到 GitHub 仓库的签名包，原工作台配置目录与签名私钥沿用。
+
 首次安装使用可信渠道交付的多点终端安装包。此后在「设置 → 更新」点击「立即检查」，下载完成后点「重启并更新」。
 安装包携带同版本的公司内部登录扩展和挂载运行时，主机列表、终端布局与 SSH 信任记录保存在工作台配置目录，密码由本机钥匙串管理。

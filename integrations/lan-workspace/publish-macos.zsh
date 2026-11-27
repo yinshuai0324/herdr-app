@@ -103,7 +103,8 @@ const fs = require('node:fs')
 const [payload, signature] = process.argv.slice(2).map(file => fs.readFileSync(file).toString('base64'))
 process.stdout.write(JSON.stringify({ payload, signature }) + '\n')
 NODE
-chmod 644 "$pending/latest.json" "$pending/version/$archive_name"
+cp -- "$pending/latest.json" "$pending/version/duodian-latest.json"
+chmod 644 "$pending/latest.json" "$pending/version/duodian-latest.json" "$pending/version/$archive_name"
 chmod 755 "$pending/version"
 mv -- "$pending/version" "$release_dir"
 mv -f -- "$pending/latest.json" "$feed_dir/app/latest.json"

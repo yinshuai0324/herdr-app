@@ -4,6 +4,9 @@ use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod feed;
+use feed::Feed;
+
 const BUNDLE: &str = "多点终端.app";
 const IDENTIFIER: &str = "dev.herdr.lan.zh";
 const CHANNEL: &str = "duodian-terminal";
@@ -26,7 +29,7 @@ struct Settings {
 }
 
 pub(super) struct Config {
-    feed: String,
+    feed: Feed,
     key: Vec<u8>,
 }
 
@@ -35,11 +38,7 @@ impl Config {
         let resources = resources(root);
         let settings: Settings = serde_json::from_slice(&std::fs::read(resources.join(CONFIG)).map_err(|e| e.to_string())?)
             .map_err(|e| e.to_string())?;
-        let feed = settings.feed;
-        if !(feed.starts_with("https://") || feed.starts_with("file:///")) || feed.contains(['?', '#'])
-        {
-            return Err("多点终端更新源必须是 HTTPS 或本地目录。".into());
-        }
+        let feed = Feed::parse(&settings.feed).map_err(str::to_owned)?;
         let key = std::fs::read(resources.join(KEY)).map_err(|e| e.to_string())?;
         if key.is_empty() || key.len() > 8192 {
             return Err("多点终端更新公钥无效。".into());
@@ -115,7 +114,7 @@ fn valid_version(version: &str) -> bool {
 
 fn read_release(config: &Config, work: &Path) -> Result<Release, String> {
     let envelope = curl().args(["--max-time", "30", "--max-filesize", "65536"])
-        .arg(format!("{}/app/latest.json", config.feed.trim_end_matches('/')))
+        .arg(config.feed.manifest_url())
         .output().map_err(|e| e.to_string())?;
     if !envelope.status.success() {
         return Err("无法读取多点终端更新源。".into());
@@ -150,8 +149,7 @@ pub(super) fn check(root: &Path) -> Result<Option<String>, String> {
     if super::staged_version(root).as_deref() == Some(&release.version) {
         return Ok(Some(release.version));
     }
-    let url = format!("{}/app/{}/duodian-{}.tar.gz",
-        config.feed.trim_end_matches('/'), release.version, release.target);
+    let url = config.feed.archive_url(&release.version, &release.target);
     super::stage(root, &release.version, &url, &release.sha256, Some(&config))
 }
 
