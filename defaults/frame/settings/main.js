@@ -15,7 +15,7 @@ const SECTIONS = [
   { id: "privacy", title: "隐私", icon: "shield" },
 ];
 
-const LOOKS = { main: "多点终端", terminals: "终端", win98: "多点终端 98" };
+const LOOKS = { main: "亮色", terminals: "深色", win98: "Windows98" };
 const APPEARANCES = [
   [null, "跟随系统"],
   ["light", "浅色"],
