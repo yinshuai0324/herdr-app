@@ -1,5 +1,5 @@
-import { View, div } from "gpui-kit";
-import { Input, InputState, h_flex, v_flex } from "gpui-base";
+import { View, div, svg } from "gpui-kit";
+import { Checkbox, Input, InputState, h_flex, v_flex } from "gpui-base";
 import { closeOverlay, machines, openOverlay, pickFolder, props, run, setLanSshPassword, setShared, shared, theme } from "herdr";
 
 const hostsKey = "lan-workspace.hosts";
@@ -221,7 +221,7 @@ export default class LanWorkspace extends View {
     const t = theme();
     const root = v_flex().id("lan-workspace").w_full().min_h(0).p(18).gap(12)
       .track_focus(this.handle).on_key_down((event, cx) => this.key(event, cx))
-      .bg(t.popover).text_color(t.foreground);
+      .text_color(t.foreground);
     if (this.action === "pick") return root.child(this.picker(t));
     if ((this.action === "edit" || this.action === "remove") && !this.entry) {
       return root.child(div().text_size(13).child("找不到该公司内部主机。"))
@@ -247,15 +247,17 @@ export default class LanWorkspace extends View {
       .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
       .when(this.remember, el => el.child(this.field("password")))
-      .child(h_flex().id("lan-remember").items_center().gap(8).cursor_pointer()
-        .on_click((_event, cx) => {
-          if (this.busy) return;
-          this.remember = !this.remember;
-          if (!this.remember) this.password.set_value("");
+      .child(Checkbox.new("lan-remember").checked(this.remember).disabled(this.busy)
+        .accessibility_label("在这台 Mac 上记住 SSH 密码")
+        .flex().items_center().gap(8).cursor_pointer()
+        .on_change((checked, cx) => {
+          this.remember = checked;
+          if (!checked) this.password.set_value("");
           cx.notify();
         })
-        .child(div().size(16).rounded(4).border_1().border_color(t.input)
-          .text_size(12).text_color(t.accent).child(this.remember ? "✓" : ""))
+        .child(h_flex().size(16).flex_none().items_center().justify_center().rounded(4).border_1()
+          .border_color(this.remember ? t.accent : t.input).bg(this.remember ? t.accent : t.background)
+          .when(this.remember, el => el.child(svg("mods/workspace-chrome/check.svg").size(12).text_color(t.accent_foreground))))
         .child(div().text_size(12).child("在这台 Mac 上记住 SSH 密码")))
       .child(div().text_size(12).text_color(this.error ? t.blocked : t.muted)
         .child(this.error || (this.remember
