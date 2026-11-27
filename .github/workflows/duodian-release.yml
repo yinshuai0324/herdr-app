@@ -1,0 +1,157 @@
+name: 多点终端发布
+
+on:
+  push:
+    branches: [feat/lan-workspace-preview]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: duodian-stable-release
+  cancel-in-progress: false
+
+env:
+  RUST_TOOLCHAIN: 1.95.0
+  ZIG_VERSION: 0.16.0
+
+jobs:
+  build:
+    if: github.repository == 'yinshuai0324/herdr-app'
+    runs-on: macos-15
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      base_tag: ${{ steps.plan.outputs.base_tag }}
+    steps:
+      - name: Plan next version
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((10#${BASH_REMATCH[3]} + 1))"
+          published="$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha)"
+          if [[ "$published" != "$GITHUB_SHA" ]]; then
+            printf 'base_tag=%s\nversion=%s\n' "$tag" "$version" >> "$GITHUB_OUTPUT"
+          else
+            echo "This commit is already published as $tag."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.plan.outputs.version != ''
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        if: steps.plan.outputs.version != ''
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        if: steps.plan.outputs.version != ''
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        if: steps.plan.outputs.version != ''
+        with:
+          node-version: 22
+      - name: Build app and company-login components
+        if: steps.plan.outputs.version != ''
+        shell: bash
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          export SDKROOT="$(xcrun --show-sdk-path)"
+          export LIBCLANG_PATH="$(dirname "$(xcrun --find clang)")/../lib"
+          inputs="$RUNNER_TEMP/duodian-inputs"
+          integrations/lan-workspace/prepare-release-macos.zsh "$VERSION" "$inputs"
+          COPYFILE_DISABLE=1 tar -czf "$RUNNER_TEMP/duodian-inputs.tar.gz" -C "$inputs" herdr-app runtime version
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.plan.outputs.version != ''
+        with:
+          name: duodian-inputs
+          path: ${{ runner.temp }}/duodian-inputs.tar.gz
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: needs.build.outputs.version != ''
+    runs-on: macos-15
+    timeout-minutes: 15
+    environment: duodian-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: duodian-inputs
+          path: ${{ runner.temp }}
+      - name: Prepare unsigned inputs and verify release base
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          BASE_TAG: ${{ needs.build.outputs.base_tag }}
+        run: |
+          set -euo pipefail
+          current="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          if [[ "$current" == "v$VERSION" ]]; then
+            [[ "$(gh api "repos/$GITHUB_REPOSITORY/commits/$current" --jq .sha)" == "$GITHUB_SHA" ]]
+            echo 'DUODIAN_ALREADY_PUBLISHED=1' >> "$GITHUB_ENV"
+            exit 0
+          fi
+          [[ "$current" == "$BASE_TAG" ]] || { echo 'The release base changed. Rerun the build.' >&2; exit 1; }
+          mkdir -p "$RUNNER_TEMP/duodian-inputs" "$RUNNER_TEMP/duodian-feed/app"
+          tar -xzf "$RUNNER_TEMP/duodian-inputs.tar.gz" -C "$RUNNER_TEMP/duodian-inputs"
+          gh release download "$BASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern duodian-latest.json \
+            --output "$RUNNER_TEMP/duodian-feed/app/latest.json"
+      - name: Sign and package
+        if: env.DUODIAN_ALREADY_PUBLISHED != '1'
+        shell: bash
+        env:
+          DUODIAN_UPDATE_SIGNING_KEY: ${{ secrets.DUODIAN_UPDATE_SIGNING_KEY }}
+          VERSION: ${{ needs.build.outputs.version }}
+          DUODIAN_RELEASE_INPUTS: ${{ runner.temp }}/duodian-inputs
+        run: |
+          set -euo pipefail
+          test -n "$DUODIAN_UPDATE_SIGNING_KEY"
+          umask 077
+          key="$(mktemp "$RUNNER_TEMP/duodian-key.XXXXXXXX")"
+          trap 'rm -- "$key"' EXIT
+          printf '%s\n' "$DUODIAN_UPDATE_SIGNING_KEY" > "$key"
+          unset DUODIAN_UPDATE_SIGNING_KEY
+          integrations/lan-workspace/publish-macos.zsh "$VERSION" "$RUNNER_TEMP/duodian-feed" "$key" \
+            "https://github.com/$GITHUB_REPOSITORY"
+      - name: Publish GitHub Release
+        if: env.DUODIAN_ALREADY_PUBLISHED != '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          BASE_TAG: ${{ needs.build.outputs.base_tag }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          [[ "$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" == "$BASE_TAG" ]]
+          assets="$RUNNER_TEMP/duodian-feed/app/$VERSION"
+          files=("$assets/duodian-macos-aarch64.tar.gz" "$assets/duodian-latest.json")
+          if previous="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish 2>/dev/null)"; then
+            [[ "$(jq -r '.isDraft' <<< "$previous")" == true ]]
+            [[ "$(jq -r '.targetCommitish' <<< "$previous")" == "$GITHUB_SHA" ]]
+            gh release upload "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          else
+            gh release create "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --latest --title "多点终端 $VERSION" --notes "多点终端的 macOS（Apple Silicon）签名更新。源码提交：$GITHUB_SHA"
+          fi

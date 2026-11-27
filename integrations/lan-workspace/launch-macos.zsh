@@ -25,10 +25,6 @@ if [[ -z "$node_binary" ]]; then
   print -u2 '启动器需要 Node.js 22 或更新版本。'
   exit 1
 fi
-if ! command -v hc >/dev/null; then
-  print -u2 '找不到 Herdr 的终端运行时 hc。'
-  exit 1
-fi
 if ! "$node_binary" -e 'process.exit(Number(process.versions.node.split(".")[0]) < 22 ? 1 : 0)'; then
   print -u2 '启动器需要 Node.js 22 或更新版本。'
   exit 1
@@ -72,6 +68,7 @@ fi
 if ! cmp -s "$keychain_binary" "$runtime/keychain"; then
   /usr/bin/install -m 700 "$keychain_binary" "$runtime/keychain"
 fi
+/usr/bin/shasum -a 256 "$integration/keychain.swift" | cut -d' ' -f1 > "$runtime/keychain-source.sha256"
 if ! cmp -s "$smb_binary" "$runtime/herdr-lan-smb"; then
   /usr/bin/install -m 700 "$smb_binary" "$runtime/herdr-lan-smb"
 fi
@@ -89,6 +86,10 @@ fs.writeFileSync(path.join(profile, 'mods/lan-workspace/runtime.json'), JSON.str
 }), { mode: 0o600 })
 NODE
 if [[ "${1:-}" == '--prepare' ]]; then exit 0; fi
+if ! command -v hc >/dev/null; then
+  print -u2 '找不到 Herdr 的终端运行时 hc。'
+  exit 1
+fi
 if ! [[ -x "$installed_app/Contents/MacOS/Herdr" ]]; then
   print -u2 '找不到 Herdr.app。'
   exit 1

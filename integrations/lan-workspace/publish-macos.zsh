@@ -56,20 +56,22 @@ if (last.product !== 'duodian-terminal' || first === -1 || after[first] <= befor
 }
 NODE
 fi
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$repo/target}"
-CARGO_TARGET_DIR="${CARGO_TARGET_DIR:A}"
-DUODIAN_APP_VERSION="$version" cargo build --release --locked
-[[ "$("$CARGO_TARGET_DIR/release/herdr-app" --version)" == "herdr-app $version" ]]
-HERDR_LAN_HOME="$work/profile" "$integration/launch-macos.zsh" --prepare
+inputs="${DUODIAN_RELEASE_INPUTS:-}"
+if [[ -z "$inputs" ]]; then
+  inputs="$work/inputs"
+  "$integration/prepare-release-macos.zsh" "$version" "$inputs"
+fi
+[[ "$(cat "$inputs/version")" == "$version" && -x "$inputs/herdr-app" ]]
+[[ -f "$inputs/runtime/node_modules/ssh2/package.json" && -x "$inputs/runtime/keychain" && -x "$inputs/runtime/herdr-lan-smb" ]]
 
 app="$work/多点终端.app"
 resources="$app/Contents/Resources"
 mkdir -p "$app/Contents/MacOS" "$resources" "$pending/version"
-/usr/bin/install -m 755 "$CARGO_TARGET_DIR/release/herdr-app" "$app/Contents/MacOS/Herdr"
+/usr/bin/install -m 755 "$inputs/herdr-app" "$app/Contents/MacOS/Herdr"
 /usr/bin/install -m 700 "$integration/duodian-launch.zsh" "$resources/duodian-launch.zsh"
 cp -- "$work/public.pem" "$resources/duodian-update.pem"
 cp -- LICENSE THIRD-PARTY-NOTICES assets/icons/Herdr.icns "$resources/"
-/usr/bin/ditto "$work/profile/runtime" "$resources/lan-runtime"
+/usr/bin/ditto "$inputs/runtime" "$resources/lan-runtime"
 /usr/bin/ditto "$integration/mod" "$resources/lan-mod"
 "$node_binary" -e 'require("node:fs").writeFileSync(process.argv[1], JSON.stringify({feed:process.argv[2]}))' "$resources/duodian-update.json" "$feed_url"
 cat > "$app/Contents/Info.plist" <<PLIST

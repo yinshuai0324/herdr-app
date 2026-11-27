@@ -22,11 +22,16 @@ if [[ ! -d "$runtime" ]]; then
   /usr/bin/ditto "$resources/lan-runtime" "$pending"
   mv -- "$pending" "$runtime"
 fi
-# Keep the helper's path stable for macOS Keychain access control.
-if ! cmp -s "$runtime/keychain" "$profile/runtime/keychain"; then
+# Keep the installed binary for unchanged source, even when CI uses another Swift compiler.
+# Releases through 0.1.22 used this source without writing the stamp.
+legacy_keychain_source=ae44add140784a67e9d227bcabc4f7a82bd660a50ba6cbac3ee5c26e901a81de
+keychain_source="$(cat "$runtime/keychain-source.sha256")"
+installed_source="$(cat "$profile/runtime/keychain-source.sha256" 2>/dev/null || print -r -- "$legacy_keychain_source")"
+if [[ ! -x "$profile/runtime/keychain" || "$keychain_source" != "$installed_source" ]]; then
   /usr/bin/install -m 700 "$runtime/keychain" "$profile/runtime/keychain.new"
   mv -f -- "$profile/runtime/keychain.new" "$profile/runtime/keychain"
 fi
+print -r -- "$keychain_source" > "$profile/runtime/keychain-source.sha256"
 mod_dir="$profile/mods/lan-workspace"
 for name in main.js mod.json; do
   if ! cmp -s "$resources/lan-mod/$name" "$mod_dir/$name"; then

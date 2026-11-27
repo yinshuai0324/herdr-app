@@ -67,5 +67,10 @@ integrations/lan-workspace/publish-macos.zsh <版本号> <更新源目录> <签�
 `duodian-macos-aarch64.tar.gz` 一起上传到 `v<版本号>` 的正式 Release。
 切换来源时，首次安装绑到 GitHub 仓库的签名包，原工作台配置目录与签名私钥沿用。
 
+推送到 `yinshuai0324/herdr-app` 的 `feat/lan-workspace-preview` 分支会触发
+「多点终端发布」工作流。工作流沿用最新正式版的主版本号和次版本号，递增补丁版本号。
+构建阶段不接触私钥。发布阶段使用 `duodian-release` 环境中的
+`DUODIAN_UPDATE_SIGNING_KEY`，验证上一版清单，再签名并发布本次提交的两个更新附件。
+
 首次安装使用可信渠道交付的多点终端安装包。此后在「设置 → 更新」点击「立即检查」，下载完成后点「重启并更新」。
 安装包携带同版本的公司内部登录扩展和挂载运行时，主机列表、终端布局与 SSH 信任记录保存在工作台配置目录，密码由本机钥匙串管理。
