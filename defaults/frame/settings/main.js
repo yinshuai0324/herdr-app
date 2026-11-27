@@ -2,7 +2,7 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar, InputState, Input, Popup } from "gpui-base";
-import { hc, run, theme, themes, fonts, updates, telemetry, settings, layouts, shared, appHome, readTextFile, writeTextFile, playSound, props, closeOverlay, openOverlay, notify, window } from "herdr";
+import { hc, run, theme, themes, fonts, updates, telemetry, feedbackPreview, settings, layouts, shared, appHome, readTextFile, writeTextFile, playSound, props, closeOverlay, openOverlay, notify, window } from "herdr";
 
 const I = (name) => `frame/settings/${name}.svg`;
 
@@ -861,6 +861,13 @@ export default class Settings extends View {
     const why = s?.off_because ? `已暂停：${s.off_because} 已在 多点终端的启动环境中设定。` : null;
     const body = v_flex()
       .w_full()
+      .when(feedbackPreview("", "", 0).direct, (view) => view
+        .child(this.heading(t, "反馈"))
+        .child(this.row(t, "反馈接收设置", "管理这台 Mac 的反馈接收地址。", this.button(t, "st-feedback-receiver", "配置", () => {
+          closeOverlay(props()?.overlay);
+          openOverlay({ mod: "frame-feedback", kind: "window", key: "feedback-receiver", width: 560, props: { configure: true } });
+        })))
+        .child(div().h(18)))
       .child(this.heading(t, "使用数据"))
       .child(
         this.row(

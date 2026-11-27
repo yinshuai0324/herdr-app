@@ -830,7 +830,7 @@ What's about the user, never a look:
   media uses the normal HTTPS cache.
   Mods use `updates().notes` and `presentUpdateNotes([version])` only
   for spotlight entries actually shown expanded, not collapsed headlines.
-  多点终端的反馈窗口可以设置飞书群自定义机器人。Webhook 和选填签名密钥
+  多点终端在「设置 › 隐私 › 反馈接收设置」中配置接收地址。Webhook 和选填签名密钥
   保存在本机钥匙串，文字反馈从客户端直接发到该群。
   macOS releases require Apple Silicon; Intel Macs must build from source.
   Keep signed macOS bundles unchanged: don't edit their Info.plist or

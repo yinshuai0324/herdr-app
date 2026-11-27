@@ -180,13 +180,14 @@ fn fixture(populated: bool, props: Value, update: Value) -> BTreeMap<String, Val
 }
 
 fn module(values: BTreeMap<String, Value>, calls: Rc<RefCell<Calls>>) -> HostModule {
+    let direct_feedback = values.get("updates").is_some_and(|u| u["app"]["channel"] == "duodian");
     let mut module = HostModule::new("herdr");
     for (name, value) in values {
         module = module.function(name, move |_| Ok(to_host(&value)));
     }
-    module = module.function("feedbackPreview", |a| {
+    module = module.function("feedbackPreview", move |a| {
         Ok(to_host(
-            &json!({"available":true,"direct":false,"body":{"message":a.string(0)?,"email":a.string(1)?}}),
+            &json!({"available":true,"direct":direct_feedback,"body":{"message":a.string(0)?,"email":a.string(1)?}}),
         ))
     });
     let shared = calls.clone();
@@ -222,12 +223,13 @@ fn module(values: BTreeMap<String, Value>, calls: Rc<RefCell<Calls>>) -> HostMod
         module = module.function(name, |_| Ok(HostValue::Null));
     }
     module = module.async_function("feedbackPickImages", |_| Ok(async { Ok(HostValue::Array(vec![])) }));
+    module = module.async_function("feedbackWebhook", |_| Ok(async { Ok(HostValue::Bool(true)) }));
     module = module.async_function("knownAgents", |_| Ok(async { Ok(HostValue::Array(vec![])) }));
     module = module.async_function("pickFolder", |_| Ok(async { Ok(HostValue::Null) }));
     module = module.async_function("pickFiles", |_| Ok(async { Ok(HostValue::Null) }));
     module = module.async_function("nextCommand", |_| Ok(std::future::pending::<herdr_shell::HostResult>()));
     module = module.cancellable_async_function("watchFolder", HostValue::Array(vec![]), |_| Ok(std::future::pending::<herdr_shell::HostResult>()));
-    for name in ["exec", "hc", "readTextFile", "writeTextFile", "sendFeedback", "feedbackWebhook", "setLanSshPassword"] {
+    for name in ["exec", "hc", "readTextFile", "writeTextFile", "sendFeedback", "setLanSshPassword"] {
         let calls = calls.clone();
         module = module.async_function(name, move |a| {
             let first = a.get(0).map(from_host).unwrap_or(Value::Null);
@@ -1489,6 +1491,33 @@ fn settings_keep_notes_in_the_whats_new_window(cx: &mut TestAppContext) {
     empty["notes"] = json!([]);
     let tree = describe(cx, &staged, "frame/whatsnew", true, empty, updates("current", "current"), None).unwrap();
     assert!(tree.contains("暂无更新日志"));
+}
+
+#[gpui::test]
+fn direct_feedback_shows_receiver_configuration_separately(cx: &mut TestAppContext) {
+    cx.update(herdr_shell::init);
+    let staged = Staged::new();
+    let mut update = updates("current", "current");
+    update["app"]["channel"] = json!("duodian");
+
+    let mut p = props();
+    p["message"] = json!("显示问题");
+    let form = describe(cx, &staged, "frame/feedback", true, p, update.clone(), None).unwrap();
+    assert!(form.contains("电子邮箱") && form.contains("feedback-send"), "{form}");
+    for hidden in ["群成员会看到", "飞书群机器人", "feedback-receiver", "feedback-webhook-edit"] {
+        assert!(!form.contains(hidden), "{form}");
+    }
+
+    let mut p = props();
+    p["section"] = json!("privacy");
+    let settings = describe(cx, &staged, "frame/settings", true, p, update.clone(), None).unwrap();
+    assert!(settings.contains("反馈接收设置") && settings.contains("st-feedback-receiver"), "{settings}");
+
+    let mut p = props();
+    p["configure"] = json!(true);
+    let receiver = describe(cx, &staged, "frame/feedback", true, p, update, None).unwrap();
+    assert!(receiver.contains("反馈接收设置") && receiver.contains("feedback-webhook-close"), "{receiver}");
+    assert!(!receiver.contains("feedback-send"), "{receiver}");
 }
 
 #[gpui::test]

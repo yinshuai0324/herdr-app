@@ -1197,7 +1197,7 @@ fn module(inst: Instance, copy: u64) -> HostModule {
         })
         .async_function("feedbackWebhook", move |a| {
             if !feedback_frame || checking() || !crate::feedback::direct() {
-                return Err(HostError::new("飞书机器人只能在多点终端反馈窗口中配置。"));
+                return Err(HostError::new("反馈接收地址只能在多点终端反馈窗口中配置。"));
             }
             let action = a.string(0)?.to_owned();
             let url = a.string(1).unwrap_or_default().to_owned();

@@ -9,6 +9,7 @@ export default class Feedback extends View {
     this.message = TextareaState.new({ value: props()?.message ?? "", placeholder: "发生了什么？你希望看到什么结果？", rows: 4 });
     this.email = InputState.new({ placeholder: "电子邮箱（选填）" });
     this.direct = feedbackPreview("", "", 0).direct;
+    this.configuring = this.direct && props()?.configure === true;
     this.webhookReady = false;
     this.webhookBusy = false;
     this.editingWebhook = false;
@@ -28,14 +29,16 @@ export default class Feedback extends View {
     this.sent = false;
     this.error = null;
     this.handle = cx.focus_handle();
-    this.message.focus();
-    if (this.direct) {
-      this.webhookUrl = InputState.new({ placeholder: "飞书群机器人 Webhook" });
+    if (this.configuring) {
+      this.webhookUrl = InputState.new({ placeholder: "接收地址（Webhook）" });
       this.webhookUrl.set_masked(true);
-      this.webhookSecret = InputState.new({ placeholder: "签名密钥（机器人启用签名时填写）" });
+      this.webhookSecret = InputState.new({ placeholder: "签名密钥（选填）" });
       this.webhookSecret.set_masked(true);
-      this.webhookAction("status", cx);
+      this.handle.focus();
+    } else {
+      this.message.focus();
     }
+    if (this.direct) this.webhookAction("status", cx);
   }
 
   close() { closeOverlay(props()?.overlay); }
@@ -47,7 +50,9 @@ export default class Feedback extends View {
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        this.webhookReady = await feedbackWebhook(action, this.webhookUrl.value(), this.webhookSecret.value());
+        this.webhookReady = action === "save"
+          ? await feedbackWebhook(action, this.webhookUrl.value(), this.webhookSecret.value())
+          : await feedbackWebhook(action);
         if (action !== "status") {
           this.editingWebhook = false;
           this.webhookUrl.set_value("");
@@ -61,32 +66,26 @@ export default class Feedback extends View {
     });
   }
 
-  webhookSettings(t, field) {
+  renderWebhookSettings(t, field) {
     const form = this.editingWebhook || !this.webhookReady;
-    return v_flex().rounded(7).border_1().border_color(t.border).p(12).gap(8)
-      .child(h_flex().items_center().gap(8)
-        .child(div().flex_1().text_size(14).font_semibold().text_color(t.foreground).child("飞书群机器人"))
+    return v_flex().id("feedback-receiver").track_focus(this.handle).w_full().min_h(0)
+      .on_key_down((e, cx) => { if (e.key === "escape") { this.close(); cx.stop_propagation(); } })
+      .child(div().px(24).py(18).cursor_grab().text_size(19).font_semibold().text_color(t.foreground).child("反馈接收设置"))
+      .child(v_flex().px(24).gap(10).on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .child(div().text_size(13).text_color(t.muted).child(form ? "接收地址和签名密钥保存在本机钥匙串。" : "已保存接收地址。"))
+        .when(form, (panel) => panel
+          .child(field(Input.new(this.webhookUrl)).h(38))
+          .child(field(Input.new(this.webhookSecret)).h(38)))
+        .when(Boolean(this.webhookError), (panel) => panel.child(div().text_size(13).text_color(t.accent).child(this.webhookError))))
+      .child(h_flex().px(24).py(16).gap(8).justify_end().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .child(this.button(t, "feedback-webhook-close", "关闭", () => this.close()))
+        .when(form, (row) => row.child(this.button(t, "feedback-webhook-save", "保存", (_e, cx) => this.webhookAction("save", cx), true, this.webhookBusy)))
         .when(!form, (row) => row
+          .child(this.button(t, "feedback-webhook-forget", "移除", (_e, cx) => this.webhookAction("forget", cx), false, this.webhookBusy))
           .child(this.button(t, "feedback-webhook-edit", "更换", (_e, cx) => {
             this.editingWebhook = true;
             cx.notify();
-          }, false, this.webhookBusy || this.sending))
-          .child(this.button(t, "feedback-webhook-forget", "移除", (_e, cx) => this.webhookAction("forget", cx), false, this.webhookBusy || this.sending))))
-      .when(form, (panel) => panel
-        .child(div().text_size(12).text_color(t.muted).child("填写群自定义机器人的 Webhook。凭据保存在这台 Mac 的钥匙串。"))
-        .child(field(Input.new(this.webhookUrl)).h(38))
-        .child(field(Input.new(this.webhookSecret)).h(38))
-        .child(h_flex().gap(8).justify_end()
-          .when(this.webhookReady, (row) => row.child(this.button(t, "feedback-webhook-cancel", "取消", (_e, cx) => {
-            this.editingWebhook = false;
-            this.webhookError = null;
-            this.webhookUrl.set_value("");
-            this.webhookSecret.set_value("");
-            cx.notify();
-          }, false, this.webhookBusy)))
-          .child(this.button(t, "feedback-webhook-save", this.webhookBusy ? "处理中…" : "保存", (_e, cx) => this.webhookAction("save", cx), true, this.webhookBusy))))
-      .when(!form, (panel) => panel.child(div().text_size(12).text_color(t.muted).child("已配置。反馈会发送到该机器人所在的飞书群。")))
-      .when(Boolean(this.webhookError), (panel) => panel.child(div().text_size(12).text_color(t.accent).child(this.webhookError)));
+          }, true, this.webhookBusy))));
   }
 
   /** Takes `{ path }`s up to the limit; the first `{ error }` is shown. */
@@ -142,11 +141,12 @@ export default class Feedback extends View {
     const t = theme();
     const preview = feedbackPreview(this.message.value(), this.email.value(), this.shots.length);
     const body = preview.body;
-    const available = this.direct ? this.webhookReady && !this.webhookBusy && !this.editingWebhook : preview.available;
+    const available = this.direct ? this.webhookReady && !this.webhookBusy : preview.available;
     const disabled = !available || this.sending || !this.message.value().trim();
     const label = (text) => div().text_size(13).text_color(t.muted).child(text);
     const field = (el) => el.w_full().p(10).rounded(7).border_1().border_color(t.border).bg(t.background).text_color(t.foreground).text_size(14);
-    return v_flex().id("feedback").track_focus(this.handle).w_full().min_h(0).h(this.direct ? 560 : 650)
+    if (this.configuring) return this.renderWebhookSettings(t, field);
+    return v_flex().id("feedback").track_focus(this.handle).w_full().min_h(0).h(this.direct ? 390 : 650)
       .on_drop((e, cx) => {
         if (this.direct || this.sending || this.sent) return;
         if (this.shots.length >= MAX_SHOTS) this.error = "最多添加 3 张截图。";
@@ -161,13 +161,12 @@ export default class Feedback extends View {
         .when(props()?.from === "agent", (el) => el.child(div().p(10).rounded(7).bg(t.raised).text_color(t.accent).text_size(14).child("这份草稿由代理生成，请在发送前核对。")))
         .when(this.sent, (el) => el.child(div().py(20).text_size(16).text_color(t.foreground).child("已发送。感谢你帮助改进多点终端。")))
         .when(!this.sent, (el) => el
-          .when(this.direct, (form) => form.child(this.webhookSettings(t, field)))
-          .child(label(this.direct ? "飞书群机器人接收文字反馈，最多 4000 字符。" : "反馈内容最多 4000 字符。可以粘贴或拖入截图，最多 3 张。"))
+          .when(this.direct && !available && !this.webhookBusy, (form) => form.child(label(this.webhookError ?? "请在「设置 › 隐私」配置反馈接收地址。")))
+          .child(label(this.direct ? "反馈内容最多 4000 字符。" : "反馈内容最多 4000 字符。可以粘贴或拖入截图，最多 3 张。"))
           .child(field(Textarea.new(this.message)).h(130))
           .when(!this.direct, (form) => form.child(this.shots_row(t)))
           .child(label("如需回复，可填写电子邮箱。"))
           .child(field(Input.new(this.email)).h(40))
-          .when(this.direct, (form) => form.child(label("群成员会看到反馈内容、选填邮箱、客户端版本和操作系统。")))
           .when(!this.direct, (form) => form
             .child(label("发送内容包括下方 JSON 和上面的截图。日志和安装 ID 不会发出。"))
             .child(v_flex().w_full().p(10).rounded(7).border_1().border_color(t.border).bg(t.background)

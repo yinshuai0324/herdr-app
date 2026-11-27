@@ -31,9 +31,9 @@ fn is_webhook_url(url: &str) -> bool {
 
 fn read_webhook() -> Result<Option<Webhook>, String> {
     crate::lan_workspace::feedback_keychain("get", None)?.map(|data| {
-        let webhook: Webhook = serde_json::from_slice(&data).map_err(|_| "飞书机器人配置无效，请重新设置。")?;
+        let webhook: Webhook = serde_json::from_slice(&data).map_err(|_| "反馈接收设置无效，请重新配置。")?;
         if !is_webhook_url(&webhook.url) {
-            return Err("飞书机器人配置无效，请重新设置。".into());
+            return Err("反馈接收设置无效，请重新配置。".into());
         }
         Ok(webhook)
     }).transpose()
@@ -44,10 +44,10 @@ pub fn configure_webhook(action: &str, url: &str, signing_secret: &str) -> Resul
         "status" => Ok(read_webhook()?.is_some()),
         "save" => {
             if !is_webhook_url(url.trim()) || signing_secret.len() > 256 {
-                return Err("请填写有效的飞书群自定义机器人 Webhook。".into());
+                return Err("请核对 Webhook 地址和选填的签名密钥。".into());
             }
             let webhook = Webhook { url: url.trim().into(), signing_secret: signing_secret.trim().into() };
-            let value = serde_json::to_string(&webhook).map_err(|_| "无法保存飞书机器人配置。")?;
+            let value = serde_json::to_string(&webhook).map_err(|_| "无法保存反馈接收设置。")?;
             crate::lan_workspace::feedback_keychain("save", Some(&value))?;
             Ok(true)
         }
@@ -55,7 +55,7 @@ pub fn configure_webhook(action: &str, url: &str, signing_secret: &str) -> Resul
             crate::lan_workspace::feedback_keychain("forget", None)?;
             Ok(false)
         }
-        _ => Err("未知的飞书机器人配置操作。".into()),
+        _ => Err("未知的反馈接收设置操作。".into()),
     }
 }
 
@@ -167,12 +167,12 @@ pub async fn send(body: Value, shots: Vec<String>) -> Result<(), String> {
         return Err("Up to 3 screenshots.".into());
     }
     let direct = direct();
-    if direct && !shots.is_empty() { return Err("飞书群自定义机器人接收文字反馈。".into()); }
+    if direct && !shots.is_empty() { return Err("反馈仅支持文字。".into()); }
     let (tx, rx) = async_channel::bounded(1);
     std::thread::spawn(move || {
         let result = if direct {
             read_webhook().and_then(|webhook| {
-                let webhook = webhook.ok_or("请先配置飞书群机器人。")?;
+                let webhook = webhook.ok_or("请先配置反馈接收地址。")?;
                 post_webhook(&webhook, &body)
             })
         } else {
@@ -231,11 +231,11 @@ fn read_webhook_response(response: &[u8]) -> Result<(), String> {
     let code = reply["code"].as_i64().or_else(|| reply["StatusCode"].as_i64());
     match (status, code) {
         ("200", Some(0)) => Ok(()),
-        (_, Some(19021)) => Err("飞书拒绝了签名，请核对机器人签名密钥和本机时间。".into()),
-        (_, Some(19024)) => Err("反馈未通过飞书机器人的关键词校验。".into()),
-        (_, Some(19022)) => Err("飞书机器人的 IP 白名单未允许本机网络。".into()),
+        (_, Some(19021)) => Err("签名校验未通过，请核对接收设置和本机时间。".into()),
+        (_, Some(19024)) => Err("反馈未通过接收方的关键词校验。".into()),
+        (_, Some(19022)) => Err("当前网络不在接收方的 IP 白名单中。".into()),
         ("429", _) => Err("发送较频繁，请稍后重试。".into()),
-        _ => Err("飞书未接收反馈，请核对机器人配置后重试。".into()),
+        _ => Err("接收方未确认收到反馈，请核对接收设置后重试。".into()),
     }
 }
 
