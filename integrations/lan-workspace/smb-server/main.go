@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/go-filesystems/smb"
 )
@@ -33,8 +32,7 @@ func serve(directory, username string, stdin io.Reader) error {
 	if err != nil {
 		return err
 	}
-	var firstSave sync.Once
-	project := &projectFS{root: root, save: func() { firstSave.Do(func() { fmt.Println("saved") }) }}
+	project := &projectFS{root: root}
 	srv := smb.New()
 	srv.RequireSigning = true
 	srv.AddUser(username, strings.TrimSuffix(password, "\n"))

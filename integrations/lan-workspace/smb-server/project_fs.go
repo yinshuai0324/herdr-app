@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"strings"
-	"sync/atomic"
 
 	filesystem "github.com/go-filesystems/interface"
 	"golang.org/x/sys/unix"
@@ -14,33 +13,14 @@ import (
 
 type projectFS struct {
 	root *os.File
-	save func()
 }
 
 type projectFile struct {
 	*os.File
-	size  int64
-	save  func()
-	dirty atomic.Bool
+	size int64
 }
 
 func (f *projectFile) Size() int64 { return f.size }
-
-func (f *projectFile) WriteAt(data []byte, offset int64) (int, error) {
-	n, err := f.File.WriteAt(data, offset)
-	if n > 0 {
-		f.dirty.Store(true)
-	}
-	return n, err
-}
-
-func (f *projectFile) Close() error {
-	err := f.File.Close()
-	if err == nil && f.dirty.Load() {
-		f.save()
-	}
-	return err
-}
 
 func privateName(name string) bool {
 	name = strings.ToLower(name)
@@ -109,7 +89,7 @@ func (project *projectFS) open(path string, flags int, perm os.FileMode) (*proje
 		unix.Close(fd)
 		return nil, err
 	}
-	return &projectFile{File: os.NewFile(uintptr(fd), name), size: stat.Size, save: project.save}, nil
+	return &projectFile{File: os.NewFile(uintptr(fd), name), size: stat.Size}, nil
 }
 
 func (project *projectFS) OpenFile(path string) (filesystem.File, error) {
@@ -246,9 +226,5 @@ func (project *projectFS) Rename(from, to string) error {
 	if _, err := statEntry(newDir, newName); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	if err := unix.Renameat(oldDir, oldName, newDir, newName); err != nil {
-		return err
-	}
-	project.save()
-	return nil
+	return unix.Renameat(oldDir, oldName, newDir, newName)
 }

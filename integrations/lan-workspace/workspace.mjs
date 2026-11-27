@@ -1,31 +1,19 @@
-import { execFile } from 'node:child_process'
 import { realpath, stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
 import { LanSmbMount } from './lan-smb-mount.mjs'
-import { LocalPreview } from './local-preview.mjs'
 import { connectSsh, endpoint } from './ssh.mjs'
 
-const exec = promisify(execFile)
 const input = process.stdin
 const output = process.stdout
 
-async function projectConfig(config) {
-  if (!isAbsolute(config.directory)) throw new Error('请选择本机项目目录。')
-  const directory = await realpath(config.directory)
+async function projectDirectory(path) {
+  if (!isAbsolute(path)) throw new Error('请选择本机项目目录。')
+  const directory = await realpath(path)
   if (directory === '/' || !(await stat(directory)).isDirectory()) {
     throw new Error('请选择本机项目目录。')
   }
-  const startCommand = config.startCommand.trim()
-  const previewUrl = config.previewUrl.trim()
-  if (!startCommand || !previewUrl) return { directory }
-  const url = URL.parse(previewUrl)
-  if (!url || !['http:', 'https:'].includes(url.protocol) ||
-      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password) {
-    throw new Error('预览地址须为这台 Mac 的本地 HTTP 或 HTTPS 地址。')
-  }
-  return { directory, startCommand, url: url.href }
+  return directory
 }
 
 function runRemote(client, command) {
@@ -100,7 +88,7 @@ function openTerminal(client, shellDirectory, signal) {
   })
 }
 
-export async function runWorkspace(config, openPreview = (url) => exec('/usr/bin/open', [url])) {
+export async function runWorkspace(config) {
   if (process.platform !== 'darwin' || !input.isTTY || !output.isTTY) {
     throw new Error('请在本机 Mac 的 Herdr 终端工作区启动。')
   }
@@ -108,17 +96,9 @@ export async function runWorkspace(config, openPreview = (url) => exec('/usr/bin
   const signal = controller.signal
   const cancel = () => controller.abort(new Error('连接已取消。'))
   const stopOnHangup = () => controller.abort(new Error('SSH 连接已断开。'))
-  const project = await projectConfig(config)
+  const directory = await projectDirectory(config.directory)
   const target = endpoint(config)
   for (const name of ['SIGHUP', 'SIGTERM', 'SIGINT']) process.once(name, cancel)
-  const preview = project.url
-    ? new LocalPreview(project, openPreview, (text) => {
-        // Project output must not take over the interactive remote terminal.
-        previewLog = (previewLog + text).slice(-4096)
-      })
-    : null
-  let previewLog = ''
-  let previewStarted = false
   let client
   let mount
   try {
@@ -130,22 +110,17 @@ export async function runWorkspace(config, openPreview = (url) => exec('/usr/bin
       throw new Error('共享目录工作区目前需要远端 Mac。')
     }
     output.write('挂载本机项目…\n')
-    mount = new LanSmbMount(client, (command) => runRemote(client, command), () => {
-      if (!preview || previewStarted || signal.aborted) return
-      previewStarted = true
-      void preview.open().catch((error) => {
-        if (!signal.aborted) {
-          const detail = previewLog.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '').trim().slice(-500)
-          process.stderr.write(`\r\n本机预览失败：${error.message}${detail ? '\r\n' + detail : ''}\r\n`)
-        }
-      })
-    }, () => controller.abort(new Error('SMB 挂载已断开。')), config.smbServer)
-    await mount.open(project.directory)
+    mount = new LanSmbMount(
+      client,
+      (command) => runRemote(client, command),
+      () => controller.abort(new Error('SMB 挂载已断开。')),
+      config.smbServer
+    )
+    await mount.open(directory)
     signal.throwIfAborted()
     output.write('共享目录已挂载。现在可运行远端已有的 CLI。\n')
     return await openTerminal(client, mount.shellDirectory, signal)
   } finally {
-    preview?.close()
     client?.off('close', stopOnHangup)
     await mount?.close()
     client?.end()

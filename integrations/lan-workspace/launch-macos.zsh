@@ -54,7 +54,7 @@ console.log(await buildSmbServer())
 NODE
 )"
 # Stage executable content outside macOS's protected Documents folder.
-for runtime_file in workspace.mjs ssh.mjs lan-smb-mount.mjs local-preview.mjs shell.mjs build-smb-server.mjs; do
+for runtime_file in workspace.mjs ssh.mjs lan-smb-mount.mjs shell.mjs build-smb-server.mjs; do
   /usr/bin/install -m 600 "$integration/$runtime_file" "$runtime/$runtime_file"
 done
 if ! [[ -f "$runtime/node_modules/ssh2/package.json" ]]; then

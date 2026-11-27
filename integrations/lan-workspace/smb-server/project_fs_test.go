@@ -14,7 +14,7 @@ func TestProjectShareKeepsPrivateFilesAndLinksLocal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	project := &projectFS{root: root, save: func() {}}
+	project := &projectFS{root: root}
 	defer project.Close()
 
 	for _, name := range []string{".env.local", "source.ts"} {

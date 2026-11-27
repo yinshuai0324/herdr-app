@@ -43,10 +43,9 @@ export class LanSmbMount {
   #abort = new AbortController()
   #closing
 
-  constructor(ssh, runRemote, onSave, onLost, executable) {
+  constructor(ssh, runRemote, onLost, executable) {
     this.ssh = ssh
     this.runRemote = runRemote
-    this.onSave = onSave
     this.onLost = onLost
     this.executable = executable
   }
@@ -104,8 +103,6 @@ export class LanSmbMount {
           ready = true
           clearTimeout(timeout)
           resolve(Number(match[1]))
-        } else if (ready && line === 'saved' && !this.#abort.signal.aborted) {
-          this.onSave()
         }
       })
       child.stdin.write(`${password}\n`)

@@ -1,6 +1,6 @@
 {
   "place": "none",
-  "overlay": { "width": 510, "height": 385 },
+  "overlay": { "width": 510, "height": 307 },
   "palette": [
     {
       "title": "连接并挂载本机项目",

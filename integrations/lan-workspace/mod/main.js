@@ -8,8 +8,6 @@ const fields = {
   username: ["SSH 用户名", "远端账号"],
   port: ["SSH 端口", "22"],
   directory: ["本机项目目录", "选取 Mac 上的项目"],
-  startCommand: ["Mac 启动命令", "npm run dev"],
-  previewUrl: ["预览地址", "http://127.0.0.1:5173/"],
 };
 
 function button(id, label, primary, action) {
@@ -25,9 +23,8 @@ export default class LanWorkspace extends View {
     let prior;
     try { prior = JSON.parse(localStorage.getItem(storageKey) || "{}"); }
     catch { prior = {}; }
-    const defaults = { port: "22", startCommand: "npm run dev", previewUrl: "http://127.0.0.1:5173/" };
     this.inputs = Object.fromEntries(Object.entries(fields).map(([key, [_label, placeholder]]) => {
-      const state = InputState.new({ value: prior[key] ?? defaults[key] ?? "", placeholder });
+      const state = InputState.new({ value: prior[key] ?? (key === "port" ? "22" : ""), placeholder });
       state.on("submit", () => this.connect(cx));
       return [key, state];
     }));
@@ -103,7 +100,6 @@ export default class LanWorkspace extends View {
       .child(div().text_size(16).font_semibold().child("连接并挂载本机项目"))
       .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
-      .child(h_flex().gap(8).child(this.field("startCommand")).child(this.field("previewUrl")))
       .child(h_flex().id("lan-remember").items_center().gap(8).cursor_pointer()
         .on_click((_event, cx) => { this.remember = !this.remember; cx.notify(); })
         .child(div().size(16).rounded(4).border_1().border_color(t.input)

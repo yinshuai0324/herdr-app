@@ -29,11 +29,9 @@ terminal runs. Only the selected project directory is shared. The SMB
 filesystem excludes environment files, Git metadata, dependency folders,
 symbolic links and hard links.
 
-On the first write from the remote machine, Herdr starts or reuses the
-local dev server and opens the local preview address. To skip automatic
-preview, leave its start command or URL blank. Type `exit` in the remote
-terminal to unmount. The workspace uses whichever CLI is already present
-on the remote Mac.
+Remote saves write through to the Mac project directory. Type `exit` in
+the remote terminal to unmount. The workspace uses whichever CLI is already
+present on the remote Mac.
 
-The SMB helper, its build and mount code, and the local preview runner are
-adapted from the Orca LAN workspace prototype. See [ORCA-LICENSE](ORCA-LICENSE).
+The SMB helper and its build and mount code are adapted from the Orca LAN
+workspace prototype. See [ORCA-LICENSE](ORCA-LICENSE).
