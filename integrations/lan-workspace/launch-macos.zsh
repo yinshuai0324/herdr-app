@@ -3,6 +3,7 @@ set -euo pipefail
 umask 077
 
 integration="$(cd -- "$(dirname -- "$0")" && pwd)"
+product_name='多点终端'
 profile="${HERDR_LAN_HOME:?HERDR_LAN_HOME must point at a dedicated Herdr profile}"
 installed_app="${HERDR_LAN_APP:-/Applications/Herdr.app}"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -81,15 +82,19 @@ fs.writeFileSync(path.join(profile, 'mods/lan-workspace/runtime.json'), JSON.str
 NODE
 if [[ "${1:-}" == '--prepare' ]]; then exit 0; fi
 if env HERDR_APP_HOME="$profile" "$installed_app/Contents/MacOS/Herdr" status >/dev/null 2>&1; then
-  print 'Herdr 局域网工作台已经打开。'
+  print "$product_name 已经打开。"
   exit 0
 fi
 application="$profile/Herdr.app"
 if [[ -n "${HERDR_LAN_BINARY:-}" ]]; then
-  application="$profile/Herdr 中文.app"
+  application="$profile/$product_name.app"
   if ! [[ -x "$HERDR_LAN_BINARY" ]]; then
-    print -u2 '找不到 Herdr 中文版构建。'
+    print -u2 "找不到 $product_name 的构建。"
     exit 1
+  fi
+  legacy_application="$profile/Herdr 中文.app"
+  if [[ ! -e "$application" && ! -L "$application" && -x "$legacy_application/Contents/MacOS/Herdr" ]]; then
+    mv -- "$legacy_application" "$application"
   fi
 fi
 if ! [[ -x "$application/Contents/MacOS/Herdr" ]]; then
@@ -98,17 +103,20 @@ fi
 if [[ -n "${HERDR_LAN_BINARY:-}" ]]; then
   source_digest="$(/usr/bin/shasum -a 256 "$HERDR_LAN_BINARY" | cut -d' ' -f1)"
   build_stamp="$application/Contents/Resources/lan-source.sha256"
+  plist="$application/Contents/Info.plist"
   if [[ "$(cat "$build_stamp" 2>/dev/null || true)" != "$source_digest" ]] ||
+    [[ "$(/usr/bin/plutil -extract CFBundleName raw -o - "$plist" 2>/dev/null || true)" != "$product_name" ]] ||
+    [[ "$(/usr/bin/plutil -extract CFBundleDisplayName raw -o - "$plist" 2>/dev/null || true)" != "$product_name" ]] ||
     ! /usr/bin/codesign --verify "$application" 2>/dev/null; then
     /usr/bin/install -m 755 "$HERDR_LAN_BINARY" "$application/Contents/MacOS/Herdr.new"
     mv -f "$application/Contents/MacOS/Herdr.new" "$application/Contents/MacOS/Herdr"
-    plist="$application/Contents/Info.plist"
     /usr/bin/plutil -replace CFBundleIdentifier -string dev.herdr.lan.zh "$plist"
-    /usr/bin/plutil -replace CFBundleDisplayName -string 'Herdr 中文' "$plist"
+    /usr/bin/plutil -replace CFBundleName -string "$product_name" "$plist"
+    /usr/bin/plutil -replace CFBundleDisplayName -string "$product_name" "$plist"
     /usr/bin/plutil -replace CFBundleDevelopmentRegion -string zh_CN "$plist"
-    /usr/bin/plutil -replace NSMicrophoneUsageDescription -string 'Herdr 的终端程序可使用麦克风进行语音输入。' "$plist"
-    /usr/bin/plutil -replace NSCameraUsageDescription -string 'Herdr 的终端程序可使用摄像头。' "$plist"
-    /usr/bin/plutil -replace NSAppleEventsUsageDescription -string 'Herdr 的终端程序可通过 AppleScript 控制其他应用。' "$plist"
+    /usr/bin/plutil -replace NSMicrophoneUsageDescription -string "$product_name 的终端程序可使用麦克风进行语音输入。" "$plist"
+    /usr/bin/plutil -replace NSCameraUsageDescription -string "$product_name 的终端程序可使用摄像头。" "$plist"
+    /usr/bin/plutil -replace NSAppleEventsUsageDescription -string "$product_name 的终端程序可通过 AppleScript 控制其他应用。" "$plist"
     printf '%s\n' "$source_digest" > "$build_stamp"
     /usr/bin/codesign --force --sign - "$application"
   fi

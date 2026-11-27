@@ -44,8 +44,10 @@ mod window;
 
 use gpui::*;
 
+pub const PRODUCT_NAME: &str = "多点终端";
+
 const HELP: &str = "\
-herdr-app: the Herdr desktop app. With no arguments it opens the window.
+herdr-app: the 多点终端 desktop app. With no arguments it opens the window.
 
 Usage:
   herdr-app                        open the window
@@ -242,7 +244,7 @@ pub fn open_main(core: std::sync::Arc<hc::Core>, requests: async_channel::Receiv
                 // macOS: always see-through, so a layout can draw its own title bar
                 // live; the app drags the window (window/titlebar.rs).
                 titlebar: Some(TitlebarOptions {
-                    title: Some("Herdr".into()),
+                    title: Some(PRODUCT_NAME.into()),
                     // Windows: hidden for good (it can't change live); the app draws it.
                     appears_transparent: cfg!(any(target_os = "macos", windows)),
                     traffic_light_position: cfg!(target_os = "macos").then(|| point(px(12.0), px(7.0))),

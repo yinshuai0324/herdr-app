@@ -96,7 +96,7 @@ export default class Feedback extends View {
       .when(!preview.available, (el) => el.child(div().flex_none().px(24).pb(12).text_size(13).text_color(t.accent).child("此源码构建版无法发送反馈。请使用正式发布版。")))
       .child(v_flex().id("feedback-body").on_mouse_down("left", (_e, cx) => cx.stop_propagation()).flex_1().flex_shrink(1).min_h(0).overflow_y_scrollbar().px(24).gap(10)
         .when(props()?.from === "agent", (el) => el.child(div().p(10).rounded(7).bg(t.raised).text_color(t.accent).text_size(14).child("这份草稿由代理生成，请在发送前核对。")))
-        .when(this.sent, (el) => el.child(div().py(20).text_size(16).text_color(t.foreground).child("已发送。感谢你帮助改进 Herdr。")))
+        .when(this.sent, (el) => el.child(div().py(20).text_size(16).text_color(t.foreground).child("已发送。感谢你帮助改进多点终端。")))
         .when(!this.sent, (el) => el
           .child(label("反馈内容最多 4000 字符。可以粘贴或拖入截图，最多 3 张。"))
           .child(field(Textarea.new(this.message)).h(130))

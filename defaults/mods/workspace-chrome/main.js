@@ -1,6 +1,6 @@
 import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { theme, run, props, window, shared, setShared, updates, layout } from "herdr";
+import { theme, run, props, window, shared, setShared, updates, layout, settings } from "herdr";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -46,7 +46,9 @@ export default class WorkspaceChrome extends View {
         .child(row("machine", "plus", "添加主机", true, () => run("mod.open", { name: "machine-add" })));
     }
     return h_flex().size_full().bg(t.chrome).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center().text_size(13.5)
-      .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed, el => el.pl(76))
+      // AppKit's traffic lights keep their size when the app zoom changes.
+      .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed,
+        el => el.pl(92 / (settings()?.zoom ?? 1)))
       .when(!collapsed, el => el.child(h_flex().flex_1().min_w(0).gap(8).items_center()
         .child(image("mods/workspace-chrome/duodian-logo.svg").size(20).flex_none())
         .child(div().min_w(0).truncate().font_semibold().text_color(t.foreground).child("多点终端"))))

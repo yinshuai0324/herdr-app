@@ -15,7 +15,7 @@ const SECTIONS = [
   { id: "privacy", title: "隐私", icon: "shield" },
 ];
 
-const LOOKS = { main: "Herdr", terminals: "终端", win98: "Herdr 98" };
+const LOOKS = { main: "多点终端", terminals: "终端", win98: "多点终端 98" };
 const APPEARANCES = [
   [null, "跟随系统"],
   ["light", "浅色"],
@@ -751,7 +751,7 @@ export default class Settings extends View {
   alerts(t) {
     const sounds = this.person.sounds ?? {};
     const on = sounds.enabled !== false;
-    const file = (f) => (f ? f.split(/[\\/]/).pop() : "Herdr 提示音");
+    const file = (f) => (f ? f.split(/[\\/]/).pop() : "多点终端提示音");
     return v_flex()
       .w_full()
       .child(this.heading(t, "声音"))
@@ -759,7 +759,7 @@ export default class Settings extends View {
         this.row(
           t,
           "播放提示音",
-          "代理需要你处理，或在你离开时完成任务，Herdr 会播放提示音。窗口角落也会显示通知。",
+          "代理需要你处理，或在你离开时完成任务，多点终端会播放提示音。窗口角落也会显示通知。",
           this.toggle(t, "st-sounds", on, (_e, cx) => this.change((p) => (p.sounds = { ...(p.sounds ?? {}), enabled: !on }), cx)),
         ),
       )
@@ -816,14 +816,14 @@ export default class Settings extends View {
               : ["源码构建版通过 Git 获取更新。", null];
     return v_flex()
       .w_full()
-      .child(this.heading(t, "Herdr"))
-      .child(this.row(t, `Herdr ${u.app.version}`, app[0], h_flex().gap(8).flex_none()
+      .child(this.heading(t, "多点终端"))
+      .child(this.row(t, `多点终端 ${u.app.version}`, app[0], h_flex().gap(8).flex_none()
         .child(this.button(t, "st-whats-new", "更新日志", () => { closeOverlay(props()?.overlay); run("app.whats_new"); }))
         .when(Boolean(app[1]), (el) => el.child(app[1]))))
       .child(div().h(18))
       .child(this.heading(t, "herdr-core"))
       .child(this.row(t, `herdr-core ${c.version ?? ""}`, core[0], core[1] ?? div()))
-      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("Herdr 每小时检查应用和运行时的更新，并在窗口角落提示。herdr-core 更新期间，终端保持运行。"));
+      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("多点终端每小时检查应用和运行时的更新，并在窗口角落提示。herdr-core 更新期间，终端保持运行。"));
   }
 
 
@@ -856,7 +856,7 @@ export default class Settings extends View {
     const s = telemetry();
     const on = s ? s.setting : this.person.telemetry !== false;
     const at = (secs) => new Date(secs * 1000).toLocaleString("zh-CN");
-    const why = s?.off_because ? `已暂停：${s.off_because} 已在 Herdr 的启动环境中设定。` : null;
+    const why = s?.off_because ? `已暂停：${s.off_because} 已在 多点终端的启动环境中设定。` : null;
     const body = v_flex()
       .w_full()
       .child(this.heading(t, "使用数据"))
@@ -864,7 +864,7 @@ export default class Settings extends View {
         this.row(
           t,
           "分享匿名使用数据",
-          why ?? "每天统计一次所用的代理、功能、工作区和标签页数量、系统与 Herdr 版本。终端内容及文件、文件夹和项目名称不会被采集。",
+          why ?? "每天统计一次所用的代理、功能、工作区和标签页数量、系统与多点终端版本。终端内容及文件、文件夹和项目名称不会被采集。",
           this.toggle(t, "st-telemetry", on, (_e, cx) =>
             this.change((p) => {
               if (on) p.telemetry = false;

@@ -658,7 +658,7 @@ impl AppWindow {
         w.apply_look(window, cx);
         w.show_layout_notes(window, cx);
         if let (Some(n), false) = (&name, gone.is_empty()) {
-            let note = json!({ "title": format!("{n} 缺少所需扩展"), "body": format!("已切换到 Herdr 布局。缺少扩展：{}。{n} 的布局文件已保留。", gone.join(", ")), "level": "info", "timeout": 12000 });
+            let note = json!({ "title": format!("{n} 缺少所需扩展"), "body": format!("已切换到多点终端布局。缺少扩展：{}。{n} 的布局文件已保留。", gone.join(", ")), "level": "info", "timeout": 12000 });
             w.open_overlay(mods::new_overlay_id(), json!({ "kind": "toast", "notification": note }), window, cx);
         }
 
@@ -2650,7 +2650,7 @@ impl AppWindow {
             Some(slot) if slot.available => Ok(()),
             Some(slot) => Err(slot.error.clone().unwrap_or_else(|| "无法加载此主机的布局，重新连接后请重试。".into())),
             None => Err(match machine {
-                Some(m) => format!("找不到主机 {m}。请用 hc machine ls 查看。通过 --temp 添加的主机不会显示在 Herdr 中。"),
+                Some(m) => format!("找不到主机 {m}。请用 hc machine ls 查看。通过 --temp 添加的主机不会显示在多点终端中。"),
                 None => "无法加载此主机的布局，重新连接后请重试。".into(),
             }),
         }
@@ -4235,7 +4235,7 @@ impl AppWindow {
             Request::Run { name, args } => self.run(&name, args, window, cx),
             Request::OpenOverlay { id, spec } => self.open_overlay(id, spec, window, cx),
             Request::CloseOverlay { id } => self.close_overlay(&id, window, cx),
-            Request::SetWindowTitle(title) => window.set_window_title(title.as_deref().unwrap_or("Herdr")),
+            Request::SetWindowTitle(title) => window.set_window_title(title.as_deref().unwrap_or(crate::PRODUCT_NAME)),
             Request::SetBadge(text) => crate::badge::set(text.as_deref()),
             Request::Refresh => self.refresh_mods(cx),
             Request::Control { cmd, reply } => {
@@ -4829,7 +4829,7 @@ impl AppWindow {
                 .text_xs()
                 .text_color(c("blocked"))
                 .overflow_y_scroll()
-                .child(format!("{} 加载失败：\n\n{}\n\n修改文件后，Herdr 会在保存时重试。", inst.name, error.as_deref().unwrap_or("?")))
+                .child(format!("{} 加载失败：\n\n{}\n\n修改文件后，多点终端会在保存时重试。", inst.name, error.as_deref().unwrap_or("?")))
                 .into_any_element(),
             None => div().into_any_element(),
         }
@@ -5204,8 +5204,8 @@ impl AppWindow {
         let core = crate::update::core();
         let core = core.ready.filter(|_| !core.updating && core.managed.is_none());
         match (crate::update::ready(), core) {
-            (Some(a), Some(c)) => Some(format!("Herdr {a} 和 herdr-core {c} 已就绪")),
-            (Some(a), None) => Some(format!("Herdr {a} 已就绪")),
+            (Some(a), Some(c)) => Some(format!("多点终端 {a} 和 herdr-core {c} 已就绪")),
+            (Some(a), None) => Some(format!("多点终端 {a} 已就绪")),
             (None, Some(c)) => Some(format!("herdr-core {c} 已就绪")),
             (None, None) => None,
         }
@@ -7685,7 +7685,7 @@ export default class Probe extends View {
             cx.window_title()
         };
         assert_eq!(title(json!("acorn"), cx).as_deref(), Some("acorn"));
-        assert_eq!(title(json!(null), cx).as_deref(), Some("Herdr"));
+        assert_eq!(title(json!(null), cx).as_deref(), Some(crate::PRODUCT_NAME));
     }
 
     include!("window/pane_size_tests.rs");

@@ -7,7 +7,7 @@ import { spaces, run, theme, props, closeOverlay, setShared, shared, hc, appHome
 const I = (name) => `frame/welcome/${name}.svg`;
 const W = (name) => `mods/workspace-chrome/${name}.svg`;
 const PAGES = 4;
-const ASK = "阅读 ~/.config/herdr-app/AGENTS.md，然后告诉我可以自定义 Herdr 的哪些部分。";
+const ASK = "阅读 ~/.config/herdr-app/AGENTS.md，然后告诉我可以自定义多点终端 的哪些部分。";
 const MIGRATE = "阅读 `herdr-app --skill`，然后从 ~/.config/herdr/config.toml 迁移我的快捷键和设置。";
 const APPEARANCES = [
   [null, "跟随系统"],
@@ -271,9 +271,9 @@ export default class Welcome extends View {
           .gap(10)
           .items_center()
           .child(svg(I("terminal")).size(16).text_color(t.muted))
-          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("此前用过 Herdr？")),
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("此前用过旧版？")),
       )
-      .child(this.para(t, "此应用使用新的运行时，原有 Herdr 工作区仍保存在原处。"))
+      .child(this.para(t, "旧版工作区仍保存在原处。"))
       .child(this.para(t, "仍然使用熟悉的工作区、标签页和终端。"))
       .child(this.para(t, "要迁移快捷键和设置，可以把这条命令交给代理："))
       .child(this.copyLine(t, MIGRATE, "w-migrate-copy"));
@@ -284,7 +284,7 @@ export default class Welcome extends View {
   pageOne(t) {
     return v_flex()
       .gap(18)
-      .child(this.title(t, "Herdr 在后台运行你的终端", "终端和代理由后台的 herdr-core 运行。电脑开机时，关闭窗口、更新或应用崩溃都不会结束它们。重新打开 Herdr 即可接着工作。"))
+      .child(this.title(t, "多点终端在后台运行你的终端", "终端和代理由后台的 herdr-core 运行。电脑开机时，关闭窗口、更新或应用崩溃都不会结束它们。重新打开多点终端 即可接着工作。"))
       .child(this.feature(t, "bot", "代理会在需要你时提醒", "运行时有进度环，等待输入时显示「需要你处理」，完成时会播放提示音。"))
       .child(this.feature(t, "messages", "代理可以启动助手", "助手会显示在启动它的代理下方。点击即可查看进度。"))
       .child(this.feature(t, "layers", "在同一窗口管理其他主机", "服务器或 Mac mini 可以运行自己的 herdr-core，这台电脑休眠时，远端代理仍能继续运行。"))
@@ -311,7 +311,7 @@ export default class Welcome extends View {
   pageTwo(t) {
     return v_flex()
       .gap(18)
-      .child(this.title(t, "添加其他主机", "从 SSH 配置中选择主机。Herdr 会连接并按需安装 herdr-core，然后在侧栏显示该主机及其工作区。"))
+      .child(this.title(t, "添加其他主机", "从 SSH 配置中选择主机。多点终端会连接并按需安装 herdr-core，然后在侧栏显示该主机及其工作区。"))
       .child(
         v_flex()
           .rounded(12)
@@ -437,7 +437,7 @@ export default class Welcome extends View {
             ),
         ),
       )
-      .child(this.title(t, "自定义 Herdr", "每个界面部分都由布局或扩展组成，代理可以修改这些文件或添加新的。把下方提示交给代理即可开始。"))
+      .child(this.title(t, "自定义多点终端", "每个界面部分都由布局或扩展组成，代理可以修改这些文件或添加新的。把下方提示交给代理即可开始。"))
       .child(this.copyLine(t, ASK))
       .child(this.para(t, "例如，让代理「把侧栏移到右边」或「添加我的拉取请求面板」。"))
       .child(
@@ -456,7 +456,7 @@ export default class Welcome extends View {
           .rounded(10)
           .bg(t.raised)
           .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("在设置中查看更多布局"))
-          .child(this.para(t, "在「设置 › 外观」可以试用 Herdr 98 等布局，也可让代理复制布局并按需修改。")),
+          .child(this.para(t, "在「设置 › 外观」可以试用 多点终端 98 等布局，也可让代理复制布局并按需修改。")),
       )
       .child(this.para(t, "遇到问题或有建议？请在「设置 › 发送反馈」告诉我们。"));
   }
@@ -499,8 +499,8 @@ export default class Welcome extends View {
           .items_center()
           .border_b(1)
           .border_color(t.border)
-          .child(image("frame/welcome/herdr.png").w(24).h(24).rounded(6).flex_none())
-          .child(div().text_size(14).font_semibold().text_color(t.foreground).child("欢迎使用 Herdr"))
+          .child(image("mods/workspace-chrome/duodian-logo.svg").w(24).h(24).flex_none())
+          .child(div().text_size(14).font_semibold().text_color(t.foreground).child("欢迎使用多点终端"))
           .child(div().px(6).py(0.5).rounded(5).border_1().border_color(t.input).text_color(t.muted).text_size(10.5).font_semibold().child("测试版"))
           .child(div().flex_1())
           .child(div().text_size(11.5).text_color(t.dim).child("拖动移动"))

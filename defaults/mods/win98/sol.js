@@ -135,7 +135,7 @@ export default class Solitaire {
     if (cmd === "options" || cmd === "deck") this.open(cmd);
     if (cmd === "exit") setApp("sol", null);
     if (cmd === "help") openDialog("message", { title: "纸牌帮助", text: "按花色从 A 到 K 填满四个回收区。列中的牌按点数递减、颜色交替排列。只有 K 可以放在空列中。点击或拖动牌可移动，双击即可送入回收区。" });
-    if (cmd === "about") openDialog("message", { title: "关于纸牌", text: "纸牌\nHerdr 98\n\n经典克朗代克纸牌。" });
+    if (cmd === "about") openDialog("message", { title: "关于纸牌", text: "纸牌\n多点终端 98\n\n经典克朗代克纸牌。" });
     if (cmd === "autowin") { this.g.home = Array.from({ length: 4 }, (_, s) => Array.from({ length: 13 }, (_, r) => s * 13 + r)); this.g.stock = []; this.g.waste = []; this.g.tab = Array.from({ length: 7 }, () => []); this.victory(cx); }
   }
   card(u, c, up = true, selected = false) {

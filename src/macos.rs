@@ -68,16 +68,16 @@ pub(crate) fn menus(layouts: &[String], shown: Option<&str>) -> Vec<Menu> {
         .iter()
         .map(|name| {
             let title = match name.as_str() {
-                "main" => "Herdr",
+                "main" => crate::PRODUCT_NAME,
                 "terminals" => "终端",
-                "win98" => "Herdr 98",
+                "win98" => "多点终端 98",
                 _ => name.as_str(),
             };
             command(title, &format!("layout.switch:{name}")).checked(Some(name.as_str()) == shown)
         })
         .chain([MenuItem::separator(), command("切换到下一个布局", "layout.switch")]);
     vec![
-        Menu::new("Herdr").items([
+        Menu::new(crate::PRODUCT_NAME).items([
             command("更新日志", "app.whats_new"),
             command("检查更新…", "app.settings:updates"),
             MenuItem::separator(),
@@ -85,11 +85,11 @@ pub(crate) fn menus(layouts: &[String], shown: Option<&str>) -> Vec<Menu> {
             MenuItem::separator(),
             MenuItem::os_submenu("服务", SystemMenuType::Services),
             MenuItem::separator(),
-            command("隐藏 Herdr", "app.hide"),
+            command("隐藏多点终端", "app.hide"),
             command("隐藏其他应用", "app.hide_others"),
             command("显示全部应用", "app.show_all"),
             MenuItem::separator(),
-            command("退出 Herdr", "app.quit"),
+            command("退出多点终端", "app.quit"),
         ]),
         Menu::new("文件").items([
             command("新建标签页", "tab.new"),
@@ -136,7 +136,7 @@ pub(crate) fn menus(layouts: &[String], shown: Option<&str>) -> Vec<Menu> {
         ]),
         Menu::new("帮助").items([
             command("键盘快捷键", "app.help"),
-            command("欢迎使用 Herdr", "app.welcome"),
+            command("欢迎使用多点终端", "app.welcome"),
             MenuItem::separator(),
             command("发送反馈…", "app.feedback"),
         ]),
@@ -196,7 +196,7 @@ mod tests {
         assert_eq!(key("新建标签页").as_deref(), Some("cmd-t"));
         assert_eq!(key("向右分屏").as_deref(), Some("cmd-d"));
         assert_eq!(key("设置…").as_deref(), Some("cmd-,"));
-        assert_eq!(key("退出 Herdr").as_deref(), Some("cmd-q"));
+        assert_eq!(key("退出多点终端").as_deref(), Some("cmd-q"));
         assert_eq!(key("复制").as_deref(), Some("cmd-c"));
         assert_eq!(key("显示或隐藏侧栏").as_deref(), Some("cmd-b"));
         assert_eq!(key("最小化").as_deref(), Some("cmd-m"));

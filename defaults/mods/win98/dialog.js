@@ -25,13 +25,13 @@ import { userName } from "./taskbar.js";
 
 const KIND_TITLE = {
   run: "运行",
-  shutdown: "关闭 Herdr",
-  logoff: "注销 Herdr",
-  about: "关于 Herdr 98",
+  shutdown: "关闭多点终端",
+  logoff: "注销多点终端",
+  about: "关于 多点终端 98",
   taskman: "关闭程序",
   display: "显示属性",
   datetime: "日期和时间属性",
-  welcome: "欢迎使用 Herdr 98",
+  welcome: "欢迎使用 多点终端 98",
   mycomputer: "我的电脑",
   network: "网上邻居",
   bin: "回收站",
@@ -128,7 +128,7 @@ export default class Dialog {
             .child("现在可以安全关闭")
             .child("你的电脑。"),
         );
-    const msg = this.p.mode === "shutdown" || this.stage === 0 ? "Herdr 正在关闭…" : "正在启动 Herdr 98…";
+    const msg = this.p.mode === "shutdown" || this.stage === 0 ? "多点终端正在关闭…" : "正在启动 多点终端 98…";
     return div()
       .size_full()
       .relative()
@@ -394,7 +394,7 @@ export default class Dialog {
           .gap(u(12))
           .items_start()
           .child(icon(u, "run", 32))
-          .child(v_flex().flex_1().children(lines("输入程序名，Herdr 会在新窗口中打开它。"))),
+          .child(v_flex().flex_1().children(lines("输入程序名，多点终端会在新窗口中打开它。"))),
       )
       .child(
         h_flex()
@@ -473,7 +473,7 @@ export default class Dialog {
             v_flex()
               .flex_1()
               .gap(u(2))
-              .child("Herdr 98")
+              .child("多点终端 98")
               .child(`版本 ${up?.app?.version ?? "4.10.1998"} 第二版`)
               .child("Copyright \u00a9 1981-2026 The Herd Corp.")
               .child(div().h(u(6)))
@@ -635,7 +635,7 @@ export default class Dialog {
         .child(this.radio(u, "s1", "小字体（原始像素）(&S)", scaleNow === 1, () => setShared("win98.scale", 1)))
         .child(this.radio(u, "s2", "大字体（像素加倍）(&L)", scaleNow === 2, () => setShared("win98.scale", 2)))
         .child(etch(u))
-        .child(v_flex().text_color(C.gray).children(lines(`Herdr 的缩放比例为 ${settings()?.zoom ?? 1} 倍；Herdr 98 在任何缩放比例下都按整像素绘制。`))),
+        .child(v_flex().text_color(C.gray).children(lines(`多点终端的缩放比例为 ${settings()?.zoom ?? 1} 倍；多点终端 98 在任何缩放比例下都按整像素绘制。`))),
     ][this.page];
     return v_flex()
       .p(u(8))
@@ -781,11 +781,11 @@ export default class Dialog {
 
   renderWelcome(u) {
     const items = [
-      { icon: "programs", title: "启动代理", text: "Herdr 在窗口中运行编码代理。\n\n从「开始 › 程序 › 代理」启动一个代理，也可以打开「运行」并输入其名称。", go: "运行(&R)…", act: { dialog: { kind: "run", value: "claude" } } },
-      { icon: "help", title: "了解 Herdr 98", text: "任务栏显示标签页，桌面文件夹代表工作区，每个窗口是一个窗格。双击标题栏可以最大化，点最小化按钮可以隐藏标签页。\n\n按 Ctrl+Esc 打开开始菜单。", go: "帮助(&H)", act: { run: ["app.help", {}] } },
+      { icon: "programs", title: "启动代理", text: "多点终端在窗口中运行编码代理。\n\n从「开始 › 程序 › 代理」启动一个代理，也可以打开「运行」并输入其名称。", go: "运行(&R)…", act: { dialog: { kind: "run", value: "claude" } } },
+      { icon: "help", title: "了解 多点终端 98", text: "任务栏显示标签页，桌面文件夹代表工作区，每个窗口是一个窗格。双击标题栏可以最大化，点最小化按钮可以隐藏标签页。\n\n按 Ctrl+Esc 打开开始菜单。", go: "帮助(&H)", act: { run: ["app.help", {}] } },
       { icon: "mines", title: "玩扫雷", text: "代理正在思考，可以休息一下。\n\n桌面也有纸牌游戏。", go: "开始游戏(&P)", act: { app: "mines" } },
-      { icon: "taskman", title: "管理你的电脑", text: "查看 Herdr 正在运行的程序并结束不再需要的程序。\n\n随时可按 Ctrl+Shift+Esc 打开。", go: "打开(&O)", act: { dialog: { kind: "taskman" } } },
-      { icon: "logoff", title: "退出 Herdr 98 布局", text: "注销可返回 Herdr 的常规布局，终端会继续运行。", go: "注销(&L)", act: { dialog: { kind: "logoff" } } },
+      { icon: "taskman", title: "管理你的电脑", text: "查看 多点终端正在运行的程序并结束不再需要的程序。\n\n随时可按 Ctrl+Shift+Esc 打开。", go: "打开(&O)", act: { dialog: { kind: "taskman" } } },
+      { icon: "logoff", title: "退出 多点终端 98 布局", text: "注销可返回 多点终端的常规布局，终端会继续运行。", go: "注销(&L)", act: { dialog: { kind: "logoff" } } },
     ];
     const it = items[this.sel] ?? items[0];
     const show = shared("win98.welcome") !== "off";
@@ -805,7 +805,7 @@ export default class Dialog {
               .gap(u(6))
               .child(icon(u, "start", 32))
               .child(div().text_size(u(22)).line_height(`${u(26)}px`).text_color(C.navy).child("欢迎使用"))
-              .child(div().text_size(u(22)).line_height(`${u(26)}px`).font_weight(700).text_color(C.text).child("Herdr"))
+              .child(div().text_size(u(22)).line_height(`${u(26)}px`).font_weight(700).text_color(C.text).child("多点终端"))
               .child(div().text_size(u(22)).line_height(`${u(26)}px`).text_color("#d07000").child("98")),
           ),
       )
@@ -863,7 +863,7 @@ export default class Dialog {
           .p(u(8))
           .justify_between()
           .items_center()
-          .child(this.check(u, "wl-show", "每次启动 Herdr 98 时显示此屏幕(&S)", show, () => setShared("win98.welcome", show ? "off" : "on")))
+          .child(this.check(u, "wl-show", "每次启动 多点终端 98 时显示此屏幕(&S)", show, () => setShared("win98.welcome", show ? "off" : "on")))
           .child(this.btn(u, "close", "关闭(&C)", () => this.close())),
       );
   }
@@ -908,7 +908,7 @@ export default class Dialog {
         .w_full()
         .min_h(0),
     ).child(
-      this.frame(u, p.title ?? KIND_TITLE[this.kind] ?? "Herdr", body, {
+      this.frame(u, p.title ?? KIND_TITLE[this.kind] ?? "多点终端", body, {
         icon: iconFor ? icon(u, iconFor, 16) : null,
         help: !explorerish,
       }),

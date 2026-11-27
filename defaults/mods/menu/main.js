@@ -47,7 +47,7 @@ function items(p, git) {
         ...(term
           ? [
               toProgram
-                ? ["使用 Herdr 右键菜单", "terminal.right_click", { terminal: term.address, to: "menu" }]
+                ? ["使用多点终端的右键菜单", "terminal.right_click", { terminal: term.address, to: "menu" }]
                 : ["将右键操作交给窗格", "terminal.right_click", { terminal: term.address, to: "program" }],
             ]
           : []),

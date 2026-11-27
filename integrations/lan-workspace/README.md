@@ -1,4 +1,4 @@
-# Herdr LAN workspace
+# 多点终端 LAN workspace
 
 This macOS integration adds “公司内部登录” as a host type in this fork of
 Herdr. The local launcher stages the SMB runtime and the host picker.
@@ -12,7 +12,7 @@ HERDR_LAN_HOME="$HOME/Library/Application Support/Herdr LAN Workspace" \
 ```
 
 Build with `cargo build --release --locked` first. The launcher uses the
-forked build in a separate app bundle within the workbench profile.
+forked build as `多点终端.app` within the workbench profile.
 
 The local Mac needs Herdr, `hc`, Node.js 22 or later, npm, and the macOS Swift
 command-line tools. On first launch the launcher also builds the pinned SMB

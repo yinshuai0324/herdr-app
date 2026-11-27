@@ -35,7 +35,7 @@ impl Runtime {
     fn load() -> Result<Self, String> {
         let path = crate::mods::mods_dir().join("lan-workspace/runtime.json");
         std::fs::read(path).ok().and_then(|bytes| serde_json::from_slice(&bytes).ok())
-            .ok_or_else(|| "无法读取共享目录配置，请用 Herdr 局域网启动器打开。".into())
+            .ok_or_else(|| "无法读取共享目录配置，请用「启动多点终端」打开。".into())
     }
 }
 
@@ -66,7 +66,7 @@ pub fn form_password(address: Address, credential: String, password: Option<Stri
     }
     let runtime = Runtime::load()?;
     if !Path::new(&runtime.keychain).is_absolute() || !Path::new(&runtime.state_dir).is_absolute() {
-        return Err("无法读取共享目录配置，请用 Herdr 局域网启动器打开。".into());
+        return Err("无法读取共享目录配置，请用「启动多点终端」打开。".into());
     }
     let endpoint = json!([address.host, address.port, address.username]).to_string();
     let key = format!("{:x}", Sha256::digest(endpoint));

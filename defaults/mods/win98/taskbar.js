@@ -207,12 +207,12 @@ export default class Taskbar {
       act: { run: ["space.select", { id: p.id }] },
     }));
     const layoutItems = layouts().map((name) => ({
-      label: name === "win98" ? "Herdr 98" : name,
+      label: name === "win98" ? "多点终端 98" : name,
       radio: name === "win98",
       act: { run: ["layout.switch", { name }] },
     }));
     return [
-      { label: "Herdr 更新", icon: "update", act: { run: ["app.settings", { section: "updates" }] } },
+      { label: "多点终端更新", icon: "update", act: { run: ["app.settings", { section: "updates" }] } },
       { sep: true },
       {
         label: "程序(&P)",
@@ -227,7 +227,7 @@ export default class Taskbar {
                 { label: "纸牌", icon: "sol", act: { app: "sol" } },
               ] },
               { label: "Office 助手", icon: "clippy", act: { shared: ["win98.clippy", "on"] } },
-              { label: "欢迎使用 Herdr 98", icon: "start", act: { dialog: { kind: "welcome" } } },
+              { label: "欢迎使用 多点终端 98", icon: "start", act: { dialog: { kind: "welcome" } } },
               { label: "命令面板", icon: "find", act: { run: ["app.palette", {}] } },
             ],
           },

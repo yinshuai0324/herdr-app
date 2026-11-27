@@ -320,7 +320,7 @@ export default class MachineAdd extends View {
           .text_size(12.8)
           .line_height("19px")
           .text_color(t.muted)
-          .child("Herdr 通过 SSH 连接服务器、Mac mini 或家里的电脑。你的电脑休眠时，远端代理仍可运行。"),
+          .child("多点终端通过 SSH 连接服务器、Mac mini 或家里的电脑。你的电脑休眠时，远端代理仍可运行。"),
       )
       .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "从 SSH 配置选择" : "SSH 配置中没有主机"))
       .child(

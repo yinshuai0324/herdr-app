@@ -24,8 +24,8 @@ const ACTION_NAMES = {
   "terminal.copy": "复制", "terminal.paste": "粘贴", "terminal.paste_image": "粘贴图片", "terminal.select_all": "全选终端内容",
   "terminal.scroll": "滚动终端", "terminal.search": "查找终端内容",
   "mod.open": "打开扩展", "layout.toggle": "显示或隐藏区域",
-  "app.palette": "命令面板", "app.settings": "设置", "app.quit": "退出 Herdr", "app.help": "键盘快捷键",
-  "app.hide": "隐藏 Herdr", "app.hide_others": "隐藏其他应用", "app.show_all": "显示全部应用",
+  "app.palette": "命令面板", "app.settings": "设置", "app.quit": "退出多点终端", "app.help": "键盘快捷键",
+  "app.hide": "隐藏多点终端", "app.hide_others": "隐藏其他应用", "app.show_all": "显示全部应用",
   "app.zoom_in": "放大", "app.zoom_out": "缩小", "app.zoom_reset": "重置缩放",
 };
 const ARG_NAMES = {

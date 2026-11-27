@@ -79,7 +79,7 @@ const NAMED = [
   ["app.zoom_in", {}, "App", "放大", "bigger font size Zoom in"],
   ["app.zoom_out", {}, "App", "缩小", "smaller font size Zoom out"],
   ["app.zoom_reset", {}, "App", "重置缩放", "font size Reset zoom"],
-  ["app.quit", {}, "App", "退出 Herdr", "exit Quit Herdr"],
+  ["app.quit", {}, "App", "退出多点终端", "exit Quit Herdr"],
 ];
 
 // Commands that act on something you point at (ids, terminals): not for a list.
@@ -172,7 +172,7 @@ function entries(mods = []) {
     .map(([name, args, group, title, words]) => ({ name, args, group, title, words }));
   const shown = layouts();
   for (const l of shown) {
-    const t = { main: "Herdr", terminals: "终端", win98: "Herdr 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
+    const t = { main: "多点终端", terminals: "终端", win98: "多点终端 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
     list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `布局：${t}`, words: `look ${l}` });
   }
   // `app.theme` sets the half of its theme's lightness, so only the themes

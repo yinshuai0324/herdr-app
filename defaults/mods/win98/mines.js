@@ -126,7 +126,7 @@ export default class Mines {
     if (help) return [
       { label: "目录(&C)", act: { run: ["app.help"] } },
       { sep: true },
-      { label: "关于扫雷(&A)…", act: { dialog: { kind: "message", title: "关于扫雷", text: "扫雷\nHerdr 98\n\n找出所有地雷，避免点开雷格。右键可标记地雷，双击数字可打开周围安全格。" } } },
+      { label: "关于扫雷(&A)…", act: { dialog: { kind: "message", title: "关于扫雷", text: "扫雷\n多点终端 98\n\n找出所有地雷，避免点开雷格。右键可标记地雷，双击数字可打开周围安全格。" } } },
     ];
     const item = (name, cmd, extra = {}) => ({ label: name, ...extra, act: { shared: ["win98.mines.req", { cmd, t: Date.now() }] } });
     return [item("新游戏(&N)", "new", { shortcut: "F2" }), { sep: true },
