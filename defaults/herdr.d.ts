@@ -13,6 +13,9 @@ export interface ExecResult {
  *  Rejects when it can't start (not installed, no such folder, the machine is unreachable). */
 export function exec(command: string, args?: string[], options?: { cwd?: string; on?: string | null; timeout?: number }): Promise<ExecResult>;
 
+/** Local shared-folder host settings only. Null removes the referenced Keychain entry. */
+export function setLanSshPassword(address: { host: string; username: string; port: number }, credential: string, password: string | null): Promise<void>;
+
 /** Runs `hc` (herdr-core) with the given arguments. Add "--json" for machine output. */
 export function hc(args: string[]): Promise<ExecResult>;
 

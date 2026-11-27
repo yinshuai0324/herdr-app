@@ -20,13 +20,15 @@ helper, using a checksum-verified Go toolchain. The toolchain and SMB library
 are needed on the local Mac only.
 
 In “添加主机”, choose “SSH（共享目录）”, enter the remote Mac's IP address, SSH
-user and port, then choose a local project and save. Select the host in
+user and port, and choose a local project. You can enter the SSH password
+before saving the host. Herdr stores it in the Mac Keychain. Select the host in
 “新建工作区”. Its first terminal, new tabs, and splits open on the remote Mac
-in the mounted project. Use the embedded terminal to verify the host
-fingerprint and enter an SSH password. Choosing “在这台 Mac 上记住 SSH 密码”
-stores a successful password in the macOS Keychain with the endpoint and
-verified host key as its identity. Later connections reuse that password;
-a rejected password prompts for a new one.
+in the mounted project. On the first connection, verify the SSH host
+fingerprint in the embedded terminal. Herdr then uses the saved password,
+associating it with the verified host key. If you leave the password
+blank or the host rejects it, enter a password when prompted. With
+“在这台 Mac 上记住 SSH 密码” enabled, a successful password is saved.
+Use “设置 → 主机 → 编辑” to update an existing host's saved password.
 
 Scripts can select a saved shared host with
 `herdr-app do space.new --machine lan:<host-id>`. The project is taken from

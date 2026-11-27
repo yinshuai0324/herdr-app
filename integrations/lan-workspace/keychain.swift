@@ -19,14 +19,20 @@ case "get":
     if status == errSecItemNotFound { exit(3) }
     guard status == errSecSuccess, let data = item as? Data else { exit(1) }
     FileHandle.standardOutput.write(data)
-case "save":
+case "save", "update":
     let secret = FileHandle.standardInput.readDataToEndOfFile()
     guard !secret.isEmpty, secret.count <= 8192 else { exit(2) }
+    let value = [kSecValueData as String: secret] as CFDictionary
+    if args[1] == "update" {
+        let status = SecItemUpdate(query as CFDictionary, value)
+        guard status == errSecSuccess || status == errSecItemNotFound else { exit(1) }
+        break
+    }
     var record = query
     record[kSecValueData as String] = secret
     var status = SecItemAdd(record as CFDictionary, nil)
     if status == errSecDuplicateItem {
-        status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: secret] as CFDictionary)
+        status = SecItemUpdate(query as CFDictionary, value)
     }
     guard status == errSecSuccess else { exit(1) }
 case "forget":

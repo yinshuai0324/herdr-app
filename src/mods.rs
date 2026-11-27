@@ -1120,6 +1120,7 @@ fn module(inst: Instance, copy: u64) -> HostModule {
     });
     let props = inst.props.clone();
     let feedback_frame = inst.name == "frame-feedback";
+    let lan_workspace = inst.name == "lan-workspace";
     let feedback_from = inst.props.get("from").and_then(Value::as_str).unwrap_or("person").to_owned();
     let feedback_layout = inst.props.get("layout").and_then(Value::as_str).unwrap_or("other").to_owned();
     let (cmd_tx, commands) = async_channel::unbounded::<String>();
@@ -1129,6 +1130,27 @@ fn module(inst: Instance, copy: u64) -> HostModule {
     });
     HostModule::new("herdr")
         .declarations(DECLARATIONS)
+        .async_function("setLanSshPassword", move |a| {
+            if !lan_workspace || checking() {
+                return Err(HostError::new("SSH 密码只能在共享目录主机设置中更新。"));
+            }
+            let address = a.get(0).and_then(|value| serde_json::from_value(from_host(value)).ok())
+                .ok_or_else(|| HostError::new("SSH 主机信息无效。"))?;
+            let credential = a.string(1)?.to_owned();
+            let password = match a.get(2) {
+                Some(HostValue::Str(s)) => Some(s.clone()),
+                Some(HostValue::Null) => None,
+                _ => return Err(HostError::new("SSH 密码无效。")),
+            };
+            let (tx, rx) = async_channel::bounded(1);
+            std::thread::spawn(move || {
+                let _ = tx.send_blocking(crate::lan_workspace::form_password(address, credential, password));
+            });
+            Ok(async move {
+                rx.recv().await.map_err(|_| HostError::new("macOS 钥匙串操作失败。"))?.map_err(HostError::new)?;
+                Ok(HostValue::Null)
+            })
+        })
         .async_function("exec", |a| {
             let command = a.string(0)?.to_owned();
             if checking() { tracing::warn!("check: mod exec'd `{command}`; the child runs for real"); }

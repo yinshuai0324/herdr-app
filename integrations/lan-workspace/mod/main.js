@@ -1,6 +1,6 @@
 import { View, div } from "gpui-kit";
 import { Input, InputState, h_flex, v_flex } from "gpui-base";
-import { closeOverlay, machines, openOverlay, pickFolder, props, run, setShared, shared, theme } from "herdr";
+import { closeOverlay, machines, openOverlay, pickFolder, props, run, setLanSshPassword, setShared, shared, theme } from "herdr";
 
 const hostsKey = "lan-workspace.hosts";
 const storageKey = "last-project";
@@ -38,6 +38,8 @@ export default class LanWorkspace extends View {
     this.handle = cx.focus_handle();
     this.handle.focus();
     this.at = 0;
+    this.busy = false;
+    this.error = "";
     if (this.action !== "add" && this.action !== "edit") return;
     let prior = this.entry;
     if (!prior) {
@@ -49,12 +51,15 @@ export default class LanWorkspace extends View {
       state.on("submit", (_event, cx) => this.save(cx));
       return [key, state];
     }));
+    this.password = InputState.new({ placeholder: this.entry ? "留空以沿用当前密码" : "可在首次连接时输入" });
+    this.password.set_masked(true);
+    this.password.on("submit", (_event, cx) => this.save(cx));
     this.remember = this.entry?.remember ?? true;
-    this.error = "";
     this.inputs.host.focus();
   }
 
   chooseFolder(cx) {
+    if (this.busy) return;
     cx.spawn(async cx => {
       try {
         const directory = await pickFolder({ prompt: "选取本机项目" });
@@ -67,6 +72,7 @@ export default class LanWorkspace extends View {
   }
 
   save(cx) {
+    if (this.busy) return;
     const values = Object.fromEntries(Object.entries(this.inputs).map(([key, field]) => [key, field.value().trim()]));
     const { host, username, port, directory } = values;
     if (!validAddress(host) || !/^[a-zA-Z0-9._-]{1,64}$/.test(username) ||
@@ -76,9 +82,9 @@ export default class LanWorkspace extends View {
       cx.notify();
       return;
     }
-    const all = hosts();
-    if (all.some(row => row.id !== this.entry?.id && row.host === host && row.username === username &&
-        row.port === Number(port) && row.directory === directory)) {
+    const duplicate = () => hosts().some(row => row.id !== this.entry?.id && row.host === host && row.username === username &&
+        row.port === Number(port) && row.directory === directory);
+    if (duplicate()) {
       this.error = "此主机和共享目录已经添加。";
       cx.notify();
       return;
@@ -90,13 +96,69 @@ export default class LanWorkspace extends View {
       name: `${project} · ${username}@${endpoint}`,
       host, username, port: Number(port), directory, remember: this.remember,
     };
-    setShared(hostsKey, this.entry ? all.map(row => row.id === entry.id ? entry : row) : [...all, entry]);
-    localStorage.setItem(storageKey, JSON.stringify(values));
-    this.close();
+    const previous = this.entry?.credential;
+    const retain = previous && entry.remember && this.entry.host === host &&
+      this.entry.username === username && this.entry.port === entry.port;
+    const password = this.remember ? this.password.value() : "";
+    this.error = "";
+    this.busy = true;
+    cx.notify();
+    cx.spawn(async cx => {
+      try {
+        if (password) {
+          entry.credential = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+          await setLanSshPassword(entry, entry.credential, password);
+        } else if (retain) {
+          entry.credential = previous;
+        }
+        const all = hosts();
+        if (duplicate() || (this.entry && !all.some(row => row === this.entry ||
+            (row.id === this.entry.id && row.credential === previous)))) {
+          if (password) await setLanSshPassword(entry, entry.credential, null);
+          this.error = "主机列表已变更，请关闭此表单后重试。";
+          return;
+        }
+        this.password.set_value("");
+        setShared(hostsKey, this.entry ? all.map(row => row.id === entry.id ? entry : row) : [...all, entry]);
+        localStorage.setItem(storageKey, JSON.stringify(values));
+        if (previous && entry.credential !== previous) {
+          await setLanSshPassword(this.entry, previous, null).catch(() => {});
+        }
+        this.busy = false;
+        this.close();
+      } catch (error) {
+        this.error = error.message || "无法保存 SSH 密码。";
+      } finally {
+        this.busy = false;
+        cx.notify();
+      }
+    });
   }
 
   close() {
-    closeOverlay(props().overlay);
+    if (!this.busy) closeOverlay(props().overlay);
+  }
+
+  remove(cx) {
+    if (this.busy) return;
+    this.busy = true;
+    this.error = "";
+    cx.notify();
+    cx.spawn(async cx => {
+      try {
+        if (this.entry.credential) {
+          await setLanSshPassword(this.entry, this.entry.credential, null);
+        }
+        setShared(hostsKey, hosts().filter(row => row.id !== this.entry.id));
+        this.busy = false;
+        this.close();
+      } catch (error) {
+        this.error = error.message || "无法移除 SSH 密码。";
+      } finally {
+        this.busy = false;
+        cx.notify();
+      }
+    });
   }
 
   targets() {
@@ -146,10 +208,11 @@ export default class LanWorkspace extends View {
 
   field(key, accessory) {
     const t = theme();
+    const secret = key === "password";
     return v_flex().flex_1().gap(5)
-      .child(div().text_size(12).text_color(t.muted).child(fields[key][0]))
+      .child(div().text_size(12).text_color(t.muted).child(secret ? "SSH 密码（可选）" : fields[key][0]))
       .child(h_flex().gap(8).items_center()
-        .child(Input.new(this.inputs[key]).flex_1().h(34).px(9).rounded(8).border_1()
+        .child(Input.new(secret ? this.password : this.inputs[key]).flex_1().h(34).px(9).rounded(8).border_1()
           .border_color(t.input).bg(t.background).text_color(t.foreground).text_size(13))
         .when(Boolean(accessory), row => row.child(accessory)));
   }
@@ -167,12 +230,10 @@ export default class LanWorkspace extends View {
     if (this.action === "remove") {
       return root.child(div().text_size(16).font_semibold().child("移除共享目录主机？"))
         .child(div().text_size(12).text_color(t.muted).child(this.entry.name))
+        .when(Boolean(this.error), el => el.child(div().text_size(12).text_color(t.blocked).child(this.error)))
         .child(h_flex().justify_end().gap(8)
           .child(button("lan-cancel", "取消", false, () => this.close()))
-          .child(button("lan-remove", "移除", true, () => {
-            setShared(hostsKey, hosts().filter(row => row.id !== this.entry.id));
-            this.close();
-          })));
+          .child(button("lan-remove", this.busy ? "正在移除…" : "移除", true, (_event, cx) => this.remove(cx))));
     }
     return root
       .child(div().text_size(16).font_semibold().child(this.action === "edit" ? "编辑共享目录主机" : "添加主机"))
@@ -185,15 +246,23 @@ export default class LanWorkspace extends View {
         .child(div().px(10).py(5).rounded(6).bg(t.hover).child("SSH（共享目录）"))))
       .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
+      .when(this.remember, el => el.child(this.field("password")))
       .child(h_flex().id("lan-remember").items_center().gap(8).cursor_pointer()
-        .on_click((_event, cx) => { this.remember = !this.remember; cx.notify(); })
+        .on_click((_event, cx) => {
+          if (this.busy) return;
+          this.remember = !this.remember;
+          if (!this.remember) this.password.set_value("");
+          cx.notify();
+        })
         .child(div().size(16).rounded(4).border_1().border_color(t.input)
           .text_size(12).text_color(t.accent).child(this.remember ? "✓" : ""))
         .child(div().text_size(12).child("在这台 Mac 上记住 SSH 密码")))
       .child(div().text_size(12).text_color(this.error ? t.blocked : t.muted)
-        .child(this.error || "在新建工作区时选择此主机。首次连接请在终端确认 SSH 指纹并输入密码。"))
+        .child(this.error || (this.remember
+          ? "密码保存到 Mac 钥匙串。首次连接时请在终端确认 SSH 主机指纹。"
+          : "首次连接时请在终端确认 SSH 主机指纹，并按提示输入密码。")))
       .child(h_flex().justify_end().gap(8)
         .child(button("lan-cancel", "取消", false, () => this.close()))
-        .child(button("lan-save", "保存主机", true, (_event, cx) => this.save(cx))));
+        .child(button("lan-save", this.busy ? "正在保存…" : "保存主机", true, (_event, cx) => this.save(cx))));
   }
 }

@@ -607,7 +607,9 @@ The main ones:
   `space.move {id, index}`, `space.select {index | id}`, `space.next`, `space.prev`.
   With no `argv`, the target core chooses that machine's default shell (PowerShell 7 when available on Windows).
 - On the Mac LAN workbench, save an “SSH（共享目录）” host in “添加主机” and
-  select it when creating a workspace. Use `space.new {machine: "lan:<id>"}`
+  select it when creating a workspace. The optional password in the host
+  form is kept in the Mac Keychain and used after SSH host verification.
+  Use `space.new {machine: "lan:<id>"}`
   from scripts, with the host ID from shared `lan-workspace.hosts`.
   Its embedded terminals, tabs and splits open over SSH in the saved SMB
   project. The local project path is fixed by the saved host. `spaces()`

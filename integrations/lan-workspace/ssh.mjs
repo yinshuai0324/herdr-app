@@ -70,7 +70,7 @@ async function verifyHost(stateDir, target, rawKey, signal) {
   if ((await readPin(file))?.fingerprint !== fingerprint) {
     throw new Error(`SSH 主机指纹已变更（当前 ${fingerprint}）。请通过远端电脑核对后再更新信任记录。`)
   }
-  return digest(target.key + ':' + fingerprint)
+  return { fingerprint, identity: digest(target.key + ':' + fingerprint) }
 }
 
 function keychain(binary, action, identity, password) {
@@ -89,11 +89,25 @@ function keychain(binary, action, identity, password) {
   })
 }
 
+async function formPassword(binary, identity) {
+  try {
+    const record = JSON.parse(await keychain(binary, 'get', identity))
+    if (typeof record?.password === 'string' && record.password &&
+        (record.fingerprint === null || typeof record.fingerprint === 'string')) {
+      return record
+    }
+  } catch {}
+  return null
+}
+
 export function connectSsh(config, target, parentSignal) {
   const client = new Client()
   const lifetime = new AbortController()
   const signal = AbortSignal.any([parentSignal, lifetime.signal])
-  let identity
+  let verified
+  const formIdentity = config.credential ? digest('form:' + target.key + ':' + config.credential) : null
+  let formRecord = null
+  let savedFromForm = false
   let saved = null
   let triedSaved = false
   let attemptPassword = null
@@ -111,7 +125,7 @@ export function connectSsh(config, target, parentSignal) {
       return saved
     }
     if (triedSaved && saved !== null) {
-      await keychain(config.keychain, 'forget', identity).catch(() => {})
+      if (!savedFromForm) await keychain(config.keychain, 'forget', verified.identity).catch(() => {})
       saved = null
       output.write('已保存的 SSH 密码未通过验证，请重新输入。\n')
     }
@@ -133,10 +147,14 @@ export function connectSsh(config, target, parentSignal) {
       reject(failure || new Error('SSH 连接已关闭。'))
     })
     client.once('ready', async () => {
-      if (config.remember && attemptPassword !== null) {
-        await keychain(config.keychain, 'save', identity, attemptPassword).catch((error) => {
-          output.write(error.message + '\n')
-        })
+      const bindForm = savedFromForm && triedSaved && saved !== null && formRecord.fingerprint === null
+      if (config.remember && (attemptPassword !== null || bindForm)) {
+        const write = formRecord
+          ? keychain(config.keychain, 'update', formIdentity, JSON.stringify({
+              password: attemptPassword ?? saved, fingerprint: verified.fingerprint,
+            }))
+          : keychain(config.keychain, 'save', verified.identity, attemptPassword)
+        await write.catch((error) => output.write(error.message + '\n'))
       }
       attemptPassword = null
       saved = null
@@ -155,10 +173,18 @@ export function connectSsh(config, target, parentSignal) {
       keepaliveInterval: 15_000,
       keepaliveCountMax: 2,
       hostVerifier(rawKey, accept) {
-        verifyHost(config.stateDir, target, rawKey, signal).then(async (credentialId) => {
-          if (identity === undefined) {
-            identity = credentialId
-            saved = await keychain(config.keychain, 'get', identity).catch(() => null)
+        verifyHost(config.stateDir, target, rawKey, signal).then(async (pin) => {
+          if (verified === undefined) {
+            verified = pin
+            if (formIdentity && config.remember) {
+              formRecord = await formPassword(config.keychain, formIdentity)
+            }
+            if (formRecord && (formRecord.fingerprint === null || formRecord.fingerprint === pin.fingerprint)) {
+              savedFromForm = true
+              saved = formRecord.password
+            } else {
+              saved = await keychain(config.keychain, 'get', pin.identity).catch(() => null)
+            }
           }
           accept(!signal.aborted)
         }, (error) => fail(error, accept))
