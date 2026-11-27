@@ -3676,6 +3676,7 @@ dependencies = [
  "gpui-pre-wgpu",
  "gpui-pre-windows",
  "herdr-shell",
+ "hmac 0.12.1",
  "image",
  "libc",
  "notify",

@@ -71,7 +71,6 @@ pub fn form_password(address: Address, credential: String, password: Option<Stri
     let endpoint = json!([address.host, address.port, address.username]).to_string();
     let key = format!("{:x}", Sha256::digest(endpoint));
     let identity = format!("{:x}", Sha256::digest(format!("form:{key}:{credential}")));
-    let error = || "macOS 钥匙串操作失败。请解锁钥匙串后重试。".to_owned();
     let (action, secret) = if let Some(password) = password {
         let pin = std::path::PathBuf::from(&runtime.state_dir).join(format!("{key}.json"));
         let fingerprint = match std::fs::read(pin) {
@@ -87,18 +86,39 @@ pub fn form_password(address: Address, credential: String, password: Option<Stri
     } else {
         ("forget", None)
     };
-    let mut child = crate::spawn::detached_command(&runtime.keychain)
-        .args([action, identity.as_str()])
+    keychain(&runtime.keychain, action, &identity, secret.as_deref()).map(|_| ())
+}
+
+pub fn feedback_keychain(action: &str, secret: Option<&str>) -> Result<Option<Vec<u8>>, String> {
+    let runtime = Runtime::load()?;
+    let profile = crate::mods::app_dir().canonicalize().map_err(|_| "找不到多点终端本机配置。")?;
+    let mut account = Sha256::new();
+    account.update(b"feishu-feedback:");
+    account.update(profile.as_os_str().as_encoded_bytes());
+    keychain(&runtime.keychain, action, &format!("{:x}", account.finalize()), secret)
+}
+
+fn keychain(path: &str, action: &str, account: &str, secret: Option<&str>) -> Result<Option<Vec<u8>>, String> {
+    let error = || "macOS 钥匙串操作失败。请解锁钥匙串后重试。".to_owned();
+    if !cfg!(target_os = "macos") || !Path::new(path).is_absolute() {
+        return Err(error());
+    }
+    let mut child = crate::spawn::detached_command(path)
+        .args([action, account])
         .stdin(if secret.is_some() { Stdio::piped() } else { Stdio::null() })
-        .stdout(Stdio::null()).stderr(Stdio::null())
+        .stdout(Stdio::piped()).stderr(Stdio::null())
         .spawn().map_err(|_| error())?;
     let wrote = match (secret, child.stdin.take()) {
         (Some(secret), Some(mut stdin)) => stdin.write_all(secret.as_bytes()).is_ok(),
         (None, _) => true,
         _ => false,
     };
-    let status = child.wait().map_err(|_| error())?;
-    if wrote && status.success() { Ok(()) } else { Err(error()) }
+    let output = child.wait_with_output().map_err(|_| error())?;
+    match output.status.code() {
+        Some(0) if wrote => Ok(Some(output.stdout)),
+        Some(3) if action == "get" => Ok(None),
+        _ => Err(error()),
+    }
 }
 
 pub fn target_id(target: &str) -> Option<&str> {

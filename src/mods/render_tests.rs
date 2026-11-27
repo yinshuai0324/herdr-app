@@ -186,7 +186,7 @@ fn module(values: BTreeMap<String, Value>, calls: Rc<RefCell<Calls>>) -> HostMod
     }
     module = module.function("feedbackPreview", |a| {
         Ok(to_host(
-            &json!({"available":true,"body":{"message":a.string(0)?,"email":a.string(1)?}}),
+            &json!({"available":true,"direct":false,"body":{"message":a.string(0)?,"email":a.string(1)?}}),
         ))
     });
     let shared = calls.clone();
@@ -227,7 +227,7 @@ fn module(values: BTreeMap<String, Value>, calls: Rc<RefCell<Calls>>) -> HostMod
     module = module.async_function("pickFiles", |_| Ok(async { Ok(HostValue::Null) }));
     module = module.async_function("nextCommand", |_| Ok(std::future::pending::<herdr_shell::HostResult>()));
     module = module.cancellable_async_function("watchFolder", HostValue::Array(vec![]), |_| Ok(std::future::pending::<herdr_shell::HostResult>()));
-    for name in ["exec", "hc", "readTextFile", "writeTextFile", "sendFeedback", "setLanSshPassword"] {
+    for name in ["exec", "hc", "readTextFile", "writeTextFile", "sendFeedback", "feedbackWebhook", "setLanSshPassword"] {
         let calls = calls.clone();
         module = module.async_function(name, move |a| {
             let first = a.get(0).map(from_host).unwrap_or(Value::Null);

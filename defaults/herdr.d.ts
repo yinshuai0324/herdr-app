@@ -393,7 +393,9 @@ export function telemetry(): {
 } | null;
 
 /** The explicit feedback draft. Sending is restricted to the app-owned feedback frame. */
-export function feedbackPreview(message: string, email: string, images?: number): { body: import("gpui-kit").HostValue; available: boolean };
+export function feedbackPreview(message: string, email: string, images?: number): { body: import("gpui-kit").HostValue; available: boolean; direct: boolean };
+/** Reads or changes the local Feishu bot setting. The actual URL and signing key stay in Keychain. Feedback window only. */
+export function feedbackWebhook(action: "status" | "save" | "forget", url?: string, signingSecret?: string): Promise<boolean>;
 /** The clipboard's image, kept for the form (`path` for `image()`); null when it holds none. Frame-only. */
 export function feedbackPasteImage(): { path: string } | { error: string } | null;
 /** Picks image files (at most 3), each kept like a pasted one. Frame-only. */

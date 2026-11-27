@@ -1191,7 +1191,26 @@ fn module(inst: Instance, copy: u64) -> HostModule {
         .function("feedbackPreview", move |a| {
             let images = a.get(2).and_then(|v| match v { HostValue::Number(n) => Some(*n as usize), _ => None }).unwrap_or(0);
             let body = crate::feedback::draft(a.string(0)?, a.string(1)?, images, &feedback_from, &feedback_layout);
-            Ok(to_host(&json!({ "body": body, "available": crate::feedback::available() })))
+            Ok(to_host(&json!({
+                "body": body, "available": crate::feedback::available(), "direct": crate::feedback::direct(),
+            })))
+        })
+        .async_function("feedbackWebhook", move |a| {
+            if !feedback_frame || checking() || !crate::feedback::direct() {
+                return Err(HostError::new("飞书机器人只能在多点终端反馈窗口中配置。"));
+            }
+            let action = a.string(0)?.to_owned();
+            let url = a.string(1).unwrap_or_default().to_owned();
+            let signing_secret = a.string(2).unwrap_or_default().to_owned();
+            let (tx, rx) = async_channel::bounded(1);
+            std::thread::spawn(move || {
+                let _ = tx.send_blocking(crate::feedback::configure_webhook(&action, &url, &signing_secret));
+            });
+            Ok(async move {
+                let configured = rx.recv().await.map_err(|_| HostError::new("macOS 钥匙串操作失败。"))?
+                    .map_err(HostError::new)?;
+                Ok(HostValue::Bool(configured))
+            })
         })
         .function("feedbackPasteImage", move |_| {
             if !feedback_frame { return Err(HostError::new("feedback screenshots are frame-only")); }
