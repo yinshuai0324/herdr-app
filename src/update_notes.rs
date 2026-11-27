@@ -45,7 +45,7 @@ fn parse_for_os(text: &str, os: &str) -> Vec<Note> {
             if let Some(platforms) = line.strip_prefix("<!-- spotlight ").and_then(|s| s.strip_suffix("-->")) {
                 note.spotlight |= platforms.trim().is_empty() || platforms.split_whitespace().any(|platform| platform == os);
             } else if line.starts_with("### ") {
-                fixed = line == "### Fixed";
+                fixed = matches!(line, "### Fixed" | "### 修复");
             } else if let Some(url) = line.strip_prefix("![").and_then(|s| s.split_once("](")).and_then(|(_, s)| s.strip_suffix(')')) {
                 if url.starts_with("https://") && let Some(item) = note.items.last_mut() {
                     item.media.push(Media { path: url.into(), ..Media::default() });
@@ -100,6 +100,7 @@ impl Launch {
 static LAUNCH: Mutex<Option<Launch>> = Mutex::new(None);
 static FETCHED: Mutex<Option<Vec<Note>>> = Mutex::new(None);
 static MEDIA: LazyLock<Mutex<MediaCache>> = LazyLock::new(|| Mutex::new(MediaCache::default()));
+const DUODIAN_CHANGELOG: &str = include_str!("../integrations/lan-workspace/CHANGELOG.md");
 
 fn path(name: &str) -> std::path::PathBuf {
     crate::mods::app_dir().join(name)
@@ -144,12 +145,18 @@ pub fn has(version: &str) -> bool {
 }
 
 fn all() -> Vec<Note> {
-    let mut notes = parse(include_str!("../CHANGELOG.md"));
+    if crate::update::is_duodian() {
+        return parse(DUODIAN_CHANGELOG);
+    }
     let fetched = FETCHED.lock().unwrap().get_or_insert_with(|| {
         std::fs::read_to_string(path("update-notes-cache.md")).map(|s| parse(&s)).unwrap_or_default()
     }).clone();
+    merge(parse(include_str!("../CHANGELOG.md")), fetched)
+}
+
+fn merge(mut notes: Vec<Note>, additional: Vec<Note>) -> Vec<Note> {
     // The running binary's curated notes win over cached copies of its releases.
-    for note in fetched {
+    for note in additional {
         if !notes.iter().any(|n| n.version == note.version) { notes.push(note); }
     }
     notes.sort_by(|a, b| if crate::update::newer(&a.version, &b.version) { std::cmp::Ordering::Less } else if crate::update::newer(&b.version, &a.version) { std::cmp::Ordering::Greater } else { std::cmp::Ordering::Equal });
@@ -222,8 +229,18 @@ impl MediaCache {
     }
 }
 
-pub fn notes(target: Option<&str>) -> Vec<Note> {
-    let mut notes = all();
+fn for_target(target: Option<&str>) -> Vec<Note> {
+    let notes = all();
+    if target.is_some()
+        && crate::update::is_duodian()
+        && let Some(changelog) = crate::update::staged_duodian_changelog()
+    {
+        return merge(notes, parse(&changelog));
+    }
+    notes
+}
+
+fn with_media(mut notes: Vec<Note>) -> Vec<Note> {
     for note in &mut notes {
         for item in &mut note.items {
             item.media = item.media.iter().filter_map(|media| {
@@ -238,7 +255,18 @@ pub fn notes(target: Option<&str>) -> Vec<Note> {
             }).collect();
         }
     }
-    LAUNCH.lock().unwrap().as_ref().map(|l| l.range(&notes, target)).unwrap_or_default()
+    notes
+}
+
+pub fn notes(target: Option<&str>) -> Vec<Note> {
+    let notes = for_target(target);
+    let range = LAUNCH.lock().unwrap().as_ref().map(|l| l.range(&notes, target)).unwrap_or_default();
+    with_media(range)
+}
+
+pub fn duodian_history(target: Option<&str>) -> Vec<Note> {
+    let upper = target.unwrap_or(crate::APP_VERSION);
+    with_media(for_target(target).into_iter().filter(|n| !crate::update::newer(&n.version, upper)).collect())
 }
 
 pub fn spotlights() -> Vec<Note> {
@@ -253,7 +281,7 @@ pub fn changed() -> bool {
 }
 
 pub fn presented(versions: &[String]) {
-    let known = all();
+    let known = for_target(crate::update::ready().as_deref());
     if let Some(l) = LAUNCH.lock().unwrap().as_mut() {
         for version in versions {
             if known.iter().any(|n| n.version == *version && n.spotlight) && !l.record.presented.contains(version) {

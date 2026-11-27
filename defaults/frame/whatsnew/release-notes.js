@@ -4,9 +4,8 @@ import { settings } from "herdr";
 
 export function versionHeader(t, note) {
   const [year, month, day] = note.date.split("-");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const date = year && months[Number(month) - 1] && Number(day)
-    ? `${months[Number(month) - 1]} ${Number(day)}` : note.date;
+  const date = year && Number(month) && Number(day)
+    ? `${year}年${Number(month)}月${Number(day)}日` : note.date;
   return h_flex().gap(10).items_center()
     .child(div().text_size(13).font_medium().text_color(t.muted).child(note.version))
     .child(div().text_size(12).text_color(t.dim).child(date));

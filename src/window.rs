@@ -872,17 +872,24 @@ impl AppWindow {
         });
     }
 
-    /// After an update: unseen spotlights. Asked for: the pending range, or this version's notes.
+    /// After an update: unseen spotlights. Explicit requests show the product's release notes.
     fn open_whats_new(&mut self, asked: bool, window: &mut Window, cx: &mut Context<Self>) {
-        let notes = if asked { crate::update_notes::notes(crate::update::ready().as_deref()) } else { crate::update_notes::spotlights() };
-        if notes.is_empty() {
+        let duodian = crate::update::is_duodian();
+        let notes = if !asked {
+            crate::update_notes::spotlights()
+        } else if duodian {
+            crate::update_notes::duodian_history(crate::update::ready().as_deref())
+        } else {
+            crate::update_notes::notes(crate::update::ready().as_deref())
+        };
+        if notes.is_empty() && !duodian {
             self.run("app.settings", json!({ "section": "updates" }), window, cx);
             return;
         }
         let viewport = window.viewport_size();
         let width = 880.0_f32.min((f32::from(viewport.width) / settings::zoom() - 24.0).max(1.0));
         let height = 760.0_f32.min((f32::from(viewport.height) / settings::zoom() - 24.0).max(1.0));
-        let spec = json!({ "mod": "frame-whatsnew", "kind": "window", "width": width, "height": height, "props": { "notes": notes } });
+        let spec = json!({ "mod": "frame-whatsnew", "kind": "window", "key": "whatsnew", "width": width, "height": height, "props": { "notes": notes } });
         self.open_overlay(mods::new_overlay_id(), spec, window, cx);
     }
 
@@ -5247,10 +5254,14 @@ impl AppWindow {
                     .on_click(cx.listener(|this, _, w, cx| this.run("app.update", json!({}), w, cx))),
             ))
             .child(div().id("update-notes").px(settings::z(6.0)).cursor_pointer().text_color(c("accent"))
-                .child(if app_ready || success { "查看更新内容" } else { "打开更新设置" })
+                .child(if app_ready || success { "查看更新日志" } else { "打开更新设置" })
                 .on_click(cx.listener(move |this, _, w, cx| {
                     if success { this.update_success = false; }
-                    this.run("app.settings", json!({ "section": "updates" }), w, cx);
+                    if app_ready || success {
+                        this.open_whats_new(true, w, cx);
+                    } else {
+                        this.run("app.settings", json!({ "section": "updates" }), w, cx);
+                    }
                 })))
             .child(
                 div()

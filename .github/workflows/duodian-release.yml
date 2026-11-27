@@ -146,12 +146,21 @@ jobs:
           [[ "$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" == "$BASE_TAG" ]]
           assets="$RUNNER_TEMP/duodian-feed/app/$VERSION"
           files=("$assets/duodian-macos-aarch64.tar.gz" "$assets/duodian-latest.json")
+          notes="$RUNNER_TEMP/duodian-release-notes.md"
+          awk -v version="$VERSION" '
+            index($0, "## [" version "] - ") == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' integrations/lan-workspace/CHANGELOG.md > "$notes"
+          if ! grep -q '^- ' "$notes"; then
+            printf '多点终端 %s（Apple Silicon）\n' "$VERSION" > "$notes"
+          fi
           if previous="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish 2>/dev/null)"; then
             [[ "$(jq -r '.isDraft' <<< "$previous")" == true ]]
             [[ "$(jq -r '.targetCommitish' <<< "$previous")" == "$GITHUB_SHA" ]]
             gh release upload "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest --notes-file "$notes"
           else
             gh release create "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-              --latest --title "多点终端 $VERSION" --notes "多点终端的 macOS（Apple Silicon）签名更新。源码提交：$GITHUB_SHA"
+              --latest --title "多点终端 $VERSION" --notes-file "$notes"
           fi

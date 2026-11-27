@@ -83,6 +83,16 @@ pub fn ready() -> Option<String> {
     READY.lock().unwrap().clone()
 }
 
+pub fn is_duodian() -> bool {
+    option_env!("DUODIAN_APP_VERSION").is_some() || root().as_deref().is_some_and(duodian::is_install)
+}
+
+/// The checker marks an update ready only after verifying its signed archive.
+pub fn staged_duodian_changelog() -> Option<String> {
+    let root = root().filter(|root| duodian::is_install(root))?;
+    std::fs::read_to_string(beside(&root, ".new").join("Contents/Resources/duodian-changelog.md")).ok()
+}
+
 /// The core the app runs, from its `server.status`, and a newer release waiting.
 #[derive(Clone, Default, serde::Serialize)]
 pub struct CoreInfo {

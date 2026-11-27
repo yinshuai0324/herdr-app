@@ -819,7 +819,7 @@ export default class Settings extends View {
       .w_full()
       .child(this.heading(t, "多点终端"))
       .child(this.row(t, `多点终端 ${u.app.version}`, app[0], h_flex().gap(8).flex_none()
-        .child(this.button(t, "st-whats-new", "更新日志", () => { closeOverlay(props()?.overlay); run("app.whats_new"); }))
+        .child(this.button(t, "st-whats-new", "查看更新日志", () => { closeOverlay(props()?.overlay); run("app.whats_new"); }))
         .when(Boolean(app[1]), (el) => el.child(app[1]))))
       .child(div().h(18))
       .child(this.heading(t, "herdr-core"))

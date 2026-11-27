@@ -807,6 +807,10 @@ What's about the user, never a look:
   Settings → Updates keeps app and core actions together;
   its What's new button opens the waiting update's release range, or this
   version's notes, in the What's new window. Reading never clears the waiting-update dot.
+  In 多点终端, 「查看更新日志」 in Settings and in the update reminder opens
+  its Chinese release history, including notes from a downloaded update.
+  Maintain that history in `integrations/lan-workspace/CHANGELOG.md` with
+  `### 新功能` and `### 修复` headings. The same entries supply the GitHub Release notes.
   Rare spotlight releases open What’s new after restart, once; otherwise a
   quiet Updated pill lasts for that launch. A build from source never updates.
   Curated notes come from the bundled root `CHANGELOG.md`; remote notes and

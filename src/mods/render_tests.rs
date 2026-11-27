@@ -1477,14 +1477,18 @@ fn settings_keep_notes_in_the_whats_new_window(cx: &mut TestAppContext) {
     let mut p = props();
     p["section"] = json!("updates");
     let tree = describe(cx, &staged, "frame/settings", true, p, update.clone(), None).unwrap();
-    assert!(tree.contains("st-whats-new") && tree.contains("st-app-update") && tree.contains("st-check-core"));
+    assert!(tree.contains("st-whats-new") && tree.contains("查看更新日志") && tree.contains("st-app-update") && tree.contains("st-check-core"));
     assert!(!tree.contains("Newest details") && !tree.contains("Older headline"));
     let mut p = props();
     p["notes"] = notes;
     let tree = describe(cx, &staged, "frame/whatsnew", true, p, update, None).unwrap();
     assert!(tree.contains("Newest details") && tree.contains("Older details"));
-    assert!(tree.contains("Also fixed") && tree.contains("Newest fix"));
-    assert!(tree.contains("Oct 26") && !tree.contains("2026-10-26"));
+    assert!(tree.contains("其他修复") && tree.contains("Newest fix"));
+    assert!(tree.contains("2026年10月26日") && !tree.contains("2026-10-26"));
+    let mut empty = props();
+    empty["notes"] = json!([]);
+    let tree = describe(cx, &staged, "frame/whatsnew", true, empty, updates("current", "current"), None).unwrap();
+    assert!(tree.contains("暂无更新日志"));
 }
 
 #[gpui::test]
