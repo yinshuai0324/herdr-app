@@ -5,9 +5,9 @@ import { closeOverlay, machines, openOverlay, pickFolder, props, run, setLanSshP
 const hostsKey = "lan-workspace.hosts";
 const storageKey = "last-project";
 const fields = {
-  host: ["IP 地址", "192.168.1.20"],
-  username: ["SSH 用户名", "远端账号"],
+  host: ["IP 地址", "请输入管理员分配的 IP"],
   port: ["SSH 端口", "22"],
+  username: ["SSH 用户名", "请输入管理员分配的用户名"],
   directory: ["本机项目目录", "选取 Mac 上的项目"],
 };
 
@@ -41,17 +41,19 @@ export default class LanWorkspace extends View {
     this.busy = false;
     this.error = "";
     if (this.action !== "add" && this.action !== "edit") return;
-    let prior = this.entry;
-    if (!prior) {
-      try { prior = JSON.parse(localStorage.getItem(storageKey) || "{}"); }
-      catch { prior = {}; }
+    let prior = this.entry ?? {};
+    if (!this.entry) {
+      try {
+        const last = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        prior = { port: last?.port, directory: last?.directory };
+      } catch {}
     }
     this.inputs = Object.fromEntries(Object.entries(fields).map(([key, [_label, placeholder]]) => {
       const state = InputState.new({ value: String(prior[key] ?? (key === "port" ? "22" : "")), placeholder });
       state.on("submit", (_event, cx) => this.save(cx));
       return [key, state];
     }));
-    this.password = InputState.new({ placeholder: this.entry ? "留空以沿用当前密码" : "可在首次连接时输入" });
+    this.password = InputState.new({ placeholder: "请输入管理员分配的密码" });
     this.password.set_masked(true);
     this.password.on("submit", (_event, cx) => this.save(cx));
     this.remember = this.entry?.remember ?? true;
@@ -120,7 +122,7 @@ export default class LanWorkspace extends View {
         }
         this.password.set_value("");
         setShared(hostsKey, this.entry ? all.map(row => row.id === entry.id ? entry : row) : [...all, entry]);
-        localStorage.setItem(storageKey, JSON.stringify(values));
+        localStorage.setItem(storageKey, JSON.stringify({ port, directory }));
         if (previous && entry.credential !== previous) {
           await setLanSshPassword(this.entry, previous, null).catch(() => {});
         }
@@ -209,10 +211,10 @@ export default class LanWorkspace extends View {
   field(key, accessory) {
     const t = theme();
     const secret = key === "password";
-    return v_flex().flex_1().gap(5)
+    return v_flex().flex_1().min_w(0).gap(5)
       .child(div().text_size(12).text_color(t.muted).child(secret ? "SSH 密码（可选）" : fields[key][0]))
       .child(h_flex().gap(8).items_center()
-        .child(Input.new(secret ? this.password : this.inputs[key]).flex_1().h(34).px(9).rounded(8).border_1()
+        .child(Input.new(secret ? this.password : this.inputs[key]).flex_1().min_w(0).h(34).px(9).rounded(8).border_1()
           .border_color(t.input).bg(t.background).text_color(t.foreground).text_size(13))
         .when(Boolean(accessory), row => row.child(accessory)));
   }
@@ -244,9 +246,10 @@ export default class LanWorkspace extends View {
             this.close();
             openOverlay({ mod: "machine-add", kind: "dialog", width: 560 });
           }).child("SSH 主机"))))
-      .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
+      .child(h_flex().gap(8).child(this.field("host")).child(this.field("port")))
+      .child(h_flex().gap(8).child(this.field("username"))
+        .when(this.remember, row => row.child(this.field("password"))))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
-      .when(this.remember, el => el.child(this.field("password")))
       .child(Checkbox.new("lan-remember").checked(this.remember).disabled(this.busy)
         .accessibility_label("在这台 Mac 上记住 SSH 密码")
         .flex().items_center().gap(8).cursor_pointer()
