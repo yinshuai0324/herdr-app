@@ -5,9 +5,9 @@ import { closeOverlay, machines, openOverlay, pickFolder, props, run, setLanSshP
 const hostsKey = "lan-workspace.hosts";
 const storageKey = "last-project";
 const fields = {
-  host: ["IP 地址", "请输入管理员分配的 IP"],
+  host: ["IP 地址", "管理员分配的 IP"],
   port: ["SSH 端口", "22"],
-  username: ["SSH 用户名", "请输入管理员分配的用户名"],
+  username: ["SSH 用户名", "管理员分配的用户名"],
   directory: ["本机项目目录", "选取 Mac 上的项目"],
 };
 
@@ -53,7 +53,7 @@ export default class LanWorkspace extends View {
       state.on("submit", (_event, cx) => this.save(cx));
       return [key, state];
     }));
-    this.password = InputState.new({ placeholder: "请输入管理员分配的密码" });
+    this.password = InputState.new({ placeholder: "管理员分配的密码" });
     this.password.set_masked(true);
     this.password.on("submit", (_event, cx) => this.save(cx));
     this.remember = this.entry?.remember ?? true;
