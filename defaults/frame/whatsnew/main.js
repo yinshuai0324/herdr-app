@@ -36,7 +36,7 @@ export default class WhatsNew extends View {
   render() {
     const t = theme();
     return v_flex()
-      .id("whatsnew").track_focus(this.handle).size_full().bg(t.popover)
+      .id("whatsnew").track_focus(this.handle).size_full()
       .on_key_down((e, cx) => {
         if (e.key === "escape" || e.key === "enter") {
           this.done();
