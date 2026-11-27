@@ -14,7 +14,7 @@ function icon(p, size, color) {
   if (!p?.icon) return null;
   return p.tint ? svg(p.icon).size(size).flex_none().text_color(color) : image(p.icon).w(size).h(size).flex_none();
 }
-const WORDS = { working: "working", blocked: "needs you", done: "finished", idle: "idle" };
+const WORDS = { working: "working", blocked: "需要你处理", done: "finished", idle: "idle" };
 
 export default class Peek extends View {
   init(_props, cx) {
@@ -86,11 +86,11 @@ export default class Peek extends View {
       .when(Boolean(pic), (el) => el.child(pic))
       .child(div().truncate().font_semibold().text_color(t.foreground).child(k?.name || k?.template || k?.program?.name || terminal || ""))
       .when(Boolean(st), (el) => el.child(div().flex_none().text_color(t[st] ?? t.dim).child(WORDS[st] ?? st)))
-      .when(Boolean(parent), (el) => el.child(div().truncate().text_color(t.dim).child(`from ${parent.name || parent.address}`)))
+      .when(Boolean(parent), (el) => el.child(div().truncate().text_color(t.dim).child(`来自 ${parent.name || parent.address}`)))
       .child(div().flex_1())
       .when(home || Boolean(space), (el) =>
         el.child(
-          this.button(t, "keep", home ? "↗ go to" : "↗ keep", () => {
+          this.button(t, "keep", home ? "↗ 前往" : "↗ 保留", () => {
             if (space && !space.active) run("space.select", { id: space.id });
             run(home ? "pane.focus" : "terminal.keep", { terminal });
             closeOverlay(overlay);

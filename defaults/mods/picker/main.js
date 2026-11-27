@@ -45,7 +45,7 @@ function spaceAvatar(name) {
 export default class Picker extends View {
   init(_props, cx) {
     this.filter = "";
-    this.input = InputState.new({ placeholder: "Go to a tab, space or agent…" });
+    this.input = InputState.new({ placeholder: "跳转到标签页、工作区或代理…" });
     this.input.on("change", (_e, cx) => {
       this.filter = this.input.value();
       this.at = this.filter ? Math.max(0, this.rows().filter(r => r.kind !== "head").findIndex(r => r.kind === "ctx")) : 0;
@@ -189,11 +189,11 @@ export default class Picker extends View {
           .when(r === sel, (el) => el.bg(t.hover).text_color(t.foreground))
           .hover((s) => s.bg(t.hover).text_color(t.foreground))
           .on_click((_e, cx) => this.go(r, cx))
-          .child(`earlier: ${r.count} quiet space${r.count > 1 ? "s" : ""} ${this.showEarlier ? "▴" : "▾"}`);
+          .child(`较早的 ${r.count} 个空闲工作区 ${this.showEarlier ? "▴" : "▾"}`);
       }
       const on = r === sel;
       if (r.kind === "new" || r.kind === "space") {
-        const label = r.kind === "new" ? "new tab" : r.machine ? `new space on ${r.machine}` : "new space";
+        const label = r.kind === "new" ? "新建标签页" : r.machine ? `在以下主机新建工作区：${r.machine}` : "新建工作区";
         return h_flex()
           .id(r.kind === "new" ? "pk-new" : `pk-space-${r.machine ?? "here"}`)
           .mx(4)
@@ -211,7 +211,7 @@ export default class Picker extends View {
           .child(div().w(12).child("+"))
           .child(label);
       }
-      const who = r.mine.map((a) => a.program?.name ?? "agent").join(" · ");
+      const who = r.mine.map((a) => a.program?.name ?? "代理").join(" · ");
       const here = r.w.active && r.ctx.active;
       return h_flex()
         .id(`pk-${r.ctx.id}`)
@@ -227,8 +227,8 @@ export default class Picker extends View {
         .on_click(() => this.go(r))
         .child(this.glyph(t, r.ctx.status))
         .child(div().flex_1().truncate().text_color(t.foreground).when(here, (d) => d.font_semibold()).child(r.ctx.name))
-        .when(r.ctx.status === "blocked", (el) => el.child(div().text_size(11).text_color(t.blocked).child("needs you")))
-        .when(r.ctx.status === "done", (el) => el.child(div().text_size(11).text_color(t.done).child("finished")))
+        .when(r.ctx.status === "blocked", (el) => el.child(div().text_size(11).text_color(t.blocked).child("需要你处理")))
+        .when(r.ctx.status === "done", (el) => el.child(div().text_size(11).text_color(t.done).child("已完成")))
         .child(div().text_size(11).text_color(t.dim).child(who + (r.team ? `  +${r.team}` : "")));
     };
 
@@ -255,7 +255,7 @@ export default class Picker extends View {
         cx.stop_propagation();
         cx.notify();
       })
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().text_color(t.foreground).child("Go to…")).child(div().id("picker-esc").px(6).py(2).rounded(5).text_size(11).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click(() => this.close()).child("Esc")))
+      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().text_color(t.foreground).child("跳转到…")).child(div().id("picker-esc").px(6).py(2).rounded(5).text_size(11).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click(() => this.close()).child("Esc")))
       .child(
         h_flex().h(36).flex_none().px(10).gap(8).items_center().rounded(9).border_1().border_color(t.accent).bg(t.background)
           .child(svg("mods/workspace-chrome/search.svg").size(15).text_color(t.dim))

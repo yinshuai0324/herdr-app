@@ -24,17 +24,17 @@ import {
 import { userName } from "./taskbar.js";
 
 const KIND_TITLE = {
-  run: "Run",
-  shutdown: "Shut Down Herdr",
-  logoff: "Log Off Herdr",
-  about: "About Herdr 98",
-  taskman: "Close Program",
-  display: "Display Properties",
-  datetime: "Date/Time Properties",
-  welcome: "Welcome to Herdr 98",
-  mycomputer: "My Computer",
-  network: "Network Neighborhood",
-  bin: "Recycle Bin",
+  run: "运行",
+  shutdown: "关闭 Herdr",
+  logoff: "注销 Herdr",
+  about: "关于 Herdr 98",
+  taskman: "关闭程序",
+  display: "显示属性",
+  datetime: "日期和时间属性",
+  welcome: "欢迎使用 Herdr 98",
+  mycomputer: "我的电脑",
+  network: "网上邻居",
+  bin: "回收站",
 };
 
 function lines(text) {
@@ -125,10 +125,10 @@ export default class Dialog {
             .text_size(u(32))
             .line_height(`${u(40)}px`)
             .text_color("#ff9c00")
-            .child("It's now safe to turn off")
-            .child("your computer."),
+            .child("现在可以安全关闭")
+            .child("你的电脑。"),
         );
-    const msg = this.p.mode === "shutdown" || this.stage === 0 ? "Herdr is shutting down..." : "Starting Herdr 98...";
+    const msg = this.p.mode === "shutdown" || this.stage === 0 ? "Herdr 正在关闭…" : "正在启动 Herdr 98…";
     return div()
       .size_full()
       .relative()
@@ -316,8 +316,8 @@ export default class Dialog {
   }
 
   frame(u, title, body, o = {}) {
-    const controls = o.help === false ? [] : [["help", () => {}, "Help"]];
-    controls.push(["close", () => this.close(), "Close"]);
+    const controls = o.help === false ? [] : [["help", () => {}, "帮助"]];
+    controls.push(["close", () => this.close(), "关闭"]);
     return win(u, {
       id: "dlg",
       title,
@@ -335,13 +335,13 @@ export default class Dialog {
     const chips = this.machines.length
       ? v_flex()
           .gap(u(4))
-          .child(label("Computer:"))
+          .child(label("电脑："))
           .child(
             h_flex()
               .gap(u(10))
               .flex_wrap()
               .children([null, ...this.machines.map((m) => m.name)].map((m, i) =>
-                this.radio(u, `m${i}`, m ?? "This computer", this.machine === m, () => (this.machine = m)),
+                this.radio(u, `m${i}`, m ?? "本机", this.machine === m, () => (this.machine = m)),
               )),
           )
       : null;
@@ -356,12 +356,12 @@ export default class Dialog {
           .child(v_flex().flex_1().gap(u(8)).child(v_flex().children(lines(p.text))).child(this.input(u, this.text))),
       )
       .when(Boolean(chips), (el) => el.child(div().pl(u(44)).child(chips)))
-      .child(this.buttons(u, [this.btn(u, "ok", "OK", () => this.ok(), { default: true }), this.btn(u, "cancel", "Cancel", () => this.close())], "end"));
+      .child(this.buttons(u, [this.btn(u, "ok", "确定", () => this.ok(), { default: true }), this.btn(u, "cancel", "取消", () => this.close())], "end"));
   }
 
   renderConfirm(u) {
     const p = this.p;
-    const bs = p.buttons ?? [{ label: "OK", default: true }];
+    const bs = p.buttons ?? [{ label: "确定", default: true }];
     return v_flex()
       .p(u(12))
       .gap(u(14))
@@ -394,13 +394,13 @@ export default class Dialog {
           .gap(u(12))
           .items_start()
           .child(icon(u, "run", 32))
-          .child(v_flex().flex_1().children(lines("Type the name of a program, and Herdr will\nopen it for you in a new window."))),
+          .child(v_flex().flex_1().children(lines("输入程序名，Herdr 会在新窗口中打开它。"))),
       )
       .child(
         h_flex()
           .gap(u(8))
           .items_center()
-          .child(div().w(u(32)).child(label("&Open:")))
+          .child(div().w(u(32)).child(label("打开(&O)：")))
           .child(
             h_flex()
               .flex_1()
@@ -415,15 +415,15 @@ export default class Dialog {
       )
       .child(
         this.buttons(u, [
-          this.btn(u, "ok", "OK", () => this.ok(), { default: true }),
-          this.btn(u, "cancel", "Cancel", () => this.close()),
-          this.btn(u, "browse", "&Browse...", null, { disabled: true }),
+          this.btn(u, "ok", "确定", () => this.ok(), { default: true }),
+          this.btn(u, "cancel", "取消", () => this.close()),
+          this.btn(u, "browse", "浏览(&B)…", null, { disabled: true }),
         ], "end"),
       );
   }
 
   renderShutdown(u) {
-    const opts = ["&Stand by", "Sh&ut down", "&Restart", "Restart in &DOS mode"];
+    const opts = ["待机(&S)", "关闭(&U)", "重启(&R)", "以 DOS 模式重启(&D)"];
     return v_flex()
       .p(u(10))
       .gap(u(12))
@@ -435,15 +435,15 @@ export default class Dialog {
           .child(
             v_flex()
               .gap(u(8))
-              .child("What do you want the computer to do?")
+              .child("请选择电脑要执行的操作：")
               .children(opts.map((o, i) => this.radio(u, `sd${i}`, o, this.choice === i, () => (this.choice = i)))),
           ),
       )
       .child(
         this.buttons(u, [
-          this.btn(u, "ok", "OK", () => this.ok(), { default: true }),
-          this.btn(u, "cancel", "Cancel", () => this.close()),
-          this.btn(u, "help", "&Help", () => run("app.help", {})),
+          this.btn(u, "ok", "确定", () => this.ok(), { default: true }),
+          this.btn(u, "cancel", "取消", () => this.close()),
+          this.btn(u, "help", "帮助(&H)", () => run("app.help", {})),
         ]),
       );
   }
@@ -452,8 +452,8 @@ export default class Dialog {
     return v_flex()
       .p(u(12))
       .gap(u(14))
-      .child(h_flex().gap(u(14)).items_center().child(icon(u, "logoff", 32)).child("Are you sure you want to log off?"))
-      .child(this.buttons(u, [this.btn(u, "yes", "&Yes", () => this.ok(), { default: true }), this.btn(u, "no", "&No", () => this.close())]));
+      .child(h_flex().gap(u(14)).items_center().child(icon(u, "logoff", 32)).child("确定要注销吗？"))
+      .child(this.buttons(u, [this.btn(u, "yes", "是(&Y)", () => this.ok(), { default: true }), this.btn(u, "no", "否(&N)", () => this.close())]));
   }
 
   renderAbout(u) {
@@ -474,22 +474,22 @@ export default class Dialog {
               .flex_1()
               .gap(u(2))
               .child("Herdr 98")
-              .child(`Version ${up?.app?.version ?? "4.10.1998"} Second Edition`)
+              .child(`版本 ${up?.app?.version ?? "4.10.1998"} 第二版`)
               .child("Copyright \u00a9 1981-2026 The Herd Corp.")
               .child(div().h(u(6)))
-              .child("This product is licensed to:")
+              .child("此产品授权给：")
               .child(div().pl(u(12)).child(userName()))
-              .child(div().pl(u(12)).child("Personal Use Edition"))
+              .child(div().pl(u(12)).child("个人使用版"))
               .child(div().h(u(6)))
               .child(etch(u))
               .child(div().h(u(4)))
-              .child(`Terminals running:  ${n}`)
-              .child(`Agents at work:  ${a}`)
+              .child(`运行中的终端：${n}`)
+              .child(`工作的代理：${a}`)
               .child(`herdr-core:  ${up?.core?.version ?? "?"}`)
-              .child("Physical memory available to agents:  64.0 MB RAM"),
+              .child("可供代理使用的物理内存：64.0 MB"),
           ),
       )
-      .child(this.buttons(u, [this.btn(u, "ok", "OK", () => this.close(), { default: true })], "end"));
+      .child(this.buttons(u, [this.btn(u, "ok", "确定", () => this.close(), { default: true })], "end"));
   }
 
   renderTaskman(u) {
@@ -527,22 +527,22 @@ export default class Dialog {
       .child(field(u, list, { pad: [1, 1] }))
       .child(
         v_flex()
-          .children(lines("WARNING: Pressing CTRL+ALT+DEL again will restart your\ncomputer. You will lose unsaved information in all\nprograms that are running.")),
+          .children(lines("警告：再次按下 Ctrl+Alt+Del 将重启电脑。正在运行的程序中未保存的信息会丢失。")),
       )
       .child(
         this.buttons(u, [
-          this.btn(u, "end", "&End Task", () => this.endTask(), { default: true }),
-          this.btn(u, "sd", "Sh&ut Down", () => {
+          this.btn(u, "end", "结束任务(&E)", () => this.endTask(), { default: true }),
+          this.btn(u, "sd", "关闭(&U)", () => {
             this.close();
             openDialog("shutdown", {});
           }),
-          this.btn(u, "cancel", "Cancel", () => this.close()),
+          this.btn(u, "cancel", "取消", () => this.close()),
         ]),
       );
   }
 
   renderDisplay(u) {
-    const tabs = ["Background", "Effects", "Settings"];
+    const tabs = ["背景", "效果", "设置"];
     const tabRow = h_flex()
       .items_end()
       .pl(u(4))
@@ -576,7 +576,7 @@ export default class Dialog {
         }),
       );
     const desktop = shared("win98.desktop") ?? "#008080";
-    const colors = [["(None)", "#008080"], ["Black", "#000000"], ["Navy", "#000080"], ["Plum", "#5c3566"], ["Forest", "#004000"], ["Clouds", "clouds"]];
+    const colors = [["(None)", "#008080"], ["黑色", "#000000"], ["藏蓝", "#000080"], ["梅紫", "#5c3566"], ["森林绿", "#004000"], ["云朵", "clouds"]];
     const scaleNow = scale();
     const page = [
       v_flex()
@@ -602,7 +602,7 @@ export default class Dialog {
                 ),
             ),
         )
-        .child(label("&Wallpaper:"))
+        .child(label("壁纸(&W)："))
         .child(
           field(
             u,
@@ -624,18 +624,18 @@ export default class Dialog {
       v_flex()
         .gap(u(10))
         .p(u(6))
-        .child(this.check(u, "snd", "Play &sounds (startup, dialogs, games)", shared("win98.mute") !== true, () => setShared("win98.mute", shared("win98.mute") !== true)))
-        .child(this.check(u, "clippy", "Show the &Office Assistant", shared("win98.clippy") !== "off", () => setShared("win98.clippy", shared("win98.clippy") === "off" ? "on" : "off")))
+        .child(this.check(u, "snd", "播放提示音（启动、对话框、游戏）(&S)", shared("win98.mute") !== true, () => setShared("win98.mute", shared("win98.mute") !== true)))
+        .child(this.check(u, "clippy", "显示 Office 助手(&O)", shared("win98.clippy") !== "off", () => setShared("win98.clippy", shared("win98.clippy") === "off" ? "on" : "off")))
         .child(etch(u))
-        .child(v_flex().text_color(C.gray).children(lines("Sounds also follow Herdr's own setting\n(Control Panel > Alerts)."))),
+        .child(v_flex().text_color(C.gray).children(lines("声音也会遵循「控制面板 › 提醒」中的设置。"))),
       v_flex()
         .gap(u(10))
         .p(u(6))
-        .child(label("Font size:"))
-        .child(this.radio(u, "s1", "&Small Fonts (pixel perfect)", scaleNow === 1, () => setShared("win98.scale", 1)))
-        .child(this.radio(u, "s2", "&Large Fonts (every pixel doubled)", scaleNow === 2, () => setShared("win98.scale", 2)))
+        .child(label("字体大小："))
+        .child(this.radio(u, "s1", "小字体（原始像素）(&S)", scaleNow === 1, () => setShared("win98.scale", 1)))
+        .child(this.radio(u, "s2", "大字体（像素加倍）(&L)", scaleNow === 2, () => setShared("win98.scale", 2)))
         .child(etch(u))
-        .child(v_flex().text_color(C.gray).children(lines(`Herdr's zoom is ${settings()?.zoom ?? 1}x; Herdr 98 draws whole\npixels at any zoom.`))),
+        .child(v_flex().text_color(C.gray).children(lines(`Herdr 的缩放比例为 ${settings()?.zoom ?? 1} 倍；Herdr 98 在任何缩放比例下都按整像素绘制。`))),
     ][this.page];
     return v_flex()
       .p(u(8))
@@ -645,9 +645,9 @@ export default class Dialog {
       .child(div().h(u(10)))
       .child(
         this.buttons(u, [
-          this.btn(u, "ok", "OK", () => this.close(), { default: true }),
-          this.btn(u, "cancel", "Cancel", () => this.close()),
-          this.btn(u, "apply", "&Apply", null, { disabled: true }),
+          this.btn(u, "ok", "确定", () => this.close(), { default: true }),
+          this.btn(u, "cancel", "取消", () => this.close()),
+          this.btn(u, "apply", "应用(&A)", null, { disabled: true }),
         ], "end"),
       );
   }
@@ -666,7 +666,7 @@ export default class Dialog {
     for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
     const cal = v_flex()
       .bg(C.white)
-      .child(h_flex().bg(C.gray).text_color(C.white).children(["S", "M", "T", "W", "T", "F", "S"].map((x) => div().w(u(22)).flex().justify_center().child(x))))
+      .child(h_flex().bg(C.gray).text_color(C.white).children(["日", "一", "二", "三", "四", "五", "六"].map((x) => div().w(u(22)).flex().justify_center().child(x))))
       .children(
         weeks.map((w) =>
           h_flex().children(
@@ -683,8 +683,8 @@ export default class Dialog {
           ),
         ),
       );
-    const month = d.toLocaleDateString("en-US", { month: "long" });
-    const time = d.toLocaleTimeString("en-US");
+    const month = d.toLocaleDateString("zh-CN", { month: "long" });
+    const time = d.toLocaleTimeString("zh-CN");
     const offset = -d.getTimezoneOffset();
     const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
     const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, "0");
@@ -704,8 +704,8 @@ export default class Dialog {
           )
           .child(v_flex().gap(u(6)).items_center().child(clockFace(u, d)).child(field(u, div().w(u(90)).flex().justify_center().child(time)))),
       )
-      .child(div().child(`Time zone: ${timeZone}`))
-      .child(this.buttons(u, [this.btn(u, "ok", "OK", () => this.close(), { default: true }), this.btn(u, "cancel", "Cancel", () => this.close())], "end"));
+      .child(div().child(`时区：${timeZone}`))
+      .child(this.buttons(u, [this.btn(u, "ok", "确定", () => this.close(), { default: true }), this.btn(u, "cancel", "取消", () => this.close())], "end"));
   }
 
   explorer(u, items, status) {
@@ -747,11 +747,11 @@ export default class Dialog {
             .h(u(200))
             .id("ex-scroll")
             .overflow_y_scroll()
-            .child(items.length ? grid : div().p(u(10)).text_color(C.gray).child("This folder is empty.")),
+            .child(items.length ? grid : div().p(u(10)).text_color(C.gray).child("此文件夹为空。")),
           { pad: [0, 0] },
         ),
       )
-      .child(h_flex().pt(u(2)).gap(u(2)).child(well(u, div().child(status)).flex_1()).child(well(u, h_flex().gap(u(4)).child(icon(u, "computer", 16)).child("My Computer")).w(u(120))));
+      .child(h_flex().pt(u(2)).gap(u(2)).child(well(u, div().child(status)).flex_1()).child(well(u, h_flex().gap(u(4)).child(icon(u, "computer", 16)).child("我的电脑")).w(u(120))));
   }
 
   renderMyComputer(u) {
@@ -761,19 +761,19 @@ export default class Dialog {
       icon: s.machine ? "netdrive" : "drive",
       act: { run: ["space.select", { id: s.id }] },
     }));
-    items.push({ label: "Control Panel", icon: "control", act: { run: ["app.settings", {}] } });
-    items.push({ label: "Printers", icon: "printer", act: { dialog: { kind: "message", title: "Printers", icon: "error", text: "There are no printers installed.\nPrinting a terminal is a choice, not a feature." } } });
+    items.push({ label: "控制面板", icon: "control", act: { run: ["app.settings", {}] } });
+    items.push({ label: "打印机", icon: "printer", act: { dialog: { kind: "message", title: "打印机", icon: "error", text: "未安装打印机。" } } });
     return this.explorer(u, items, `${items.length} object(s)`);
   }
 
   renderNetwork(u) {
     const items = [
-      { label: "Entire Network", icon: "network", act: null },
-      { label: "This computer", icon: "computer", act: { dialog: { kind: "prompt", title: "New Space", text: "Type a name for the new space:", icon: "folder", command: { name: "space.new", args: { machine: "" } } } } },
+      { label: "整个网络", icon: "network", act: null },
+      { label: "本机", icon: "computer", act: { dialog: { kind: "prompt", title: "新建工作区", text: "为新工作区命名：", icon: "folder", command: { name: "space.new", args: { machine: "" } } } } },
       ...this.machines.map((m) => ({
         label: m.name,
         icon: "computer",
-        act: { dialog: { kind: "prompt", title: `New Space on ${m.name}`, text: `Type a name for the new space on ${m.name}:`, icon: "netdrive", command: { name: "space.new", args: { machine: m.name } } } },
+        act: { dialog: { kind: "prompt", title: `在以下主机新建工作区：${m.name}`, text: `为此主机的新工作区命名：${m.name}:`, icon: "netdrive", command: { name: "space.new", args: { machine: m.name } } } },
       })),
     ];
     return this.explorer(u, items, `${items.length} object(s)`);
@@ -781,11 +781,11 @@ export default class Dialog {
 
   renderWelcome(u) {
     const items = [
-      { icon: "programs", title: "Begin an Agent", text: "Herdr runs your coding agents in windows,\nlike it's 1998 and the future at once.\n\nStart one from Start > Programs > Agents,\nor open the Run box and type its name.", go: "&Run...", act: { dialog: { kind: "run", value: "claude" } } },
-      { icon: "help", title: "Discover Herdr 98", text: "The taskbar is your tabs. The folders on\nthe desktop are your spaces. Each window\nis a pane: double-click its title bar to\nmaximize it, or use _ to minimize the tab.\n\nCtrl+Esc opens the Start menu.", go: "&Help", act: { run: ["app.help", {}] } },
-      { icon: "mines", title: "Play Mines", text: "Your agent is thinking.\nYou've earned a break.\n\nSolitaire is on the desktop too.", go: "&Play", act: { app: "mines" } },
-      { icon: "taskman", title: "Maintain Your Computer", text: "See every program Herdr runs, and end\nthe ones you don't need anymore.\n\nCtrl+Shift+Esc opens it anytime.", go: "&Open", act: { dialog: { kind: "taskman" } } },
-      { icon: "logoff", title: "Leave Herdr 98", text: "Miss the future? Log Off takes you\nback to Herdr's normal layout.\nYour terminals keep running.", go: "&Log Off", act: { dialog: { kind: "logoff" } } },
+      { icon: "programs", title: "启动代理", text: "Herdr 在窗口中运行编码代理。\n\n从「开始 › 程序 › 代理」启动一个代理，也可以打开「运行」并输入其名称。", go: "运行(&R)…", act: { dialog: { kind: "run", value: "claude" } } },
+      { icon: "help", title: "了解 Herdr 98", text: "任务栏显示标签页，桌面文件夹代表工作区，每个窗口是一个窗格。双击标题栏可以最大化，点最小化按钮可以隐藏标签页。\n\n按 Ctrl+Esc 打开开始菜单。", go: "帮助(&H)", act: { run: ["app.help", {}] } },
+      { icon: "mines", title: "玩扫雷", text: "代理正在思考，可以休息一下。\n\n桌面也有纸牌游戏。", go: "开始游戏(&P)", act: { app: "mines" } },
+      { icon: "taskman", title: "管理你的电脑", text: "查看 Herdr 正在运行的程序并结束不再需要的程序。\n\n随时可按 Ctrl+Shift+Esc 打开。", go: "打开(&O)", act: { dialog: { kind: "taskman" } } },
+      { icon: "logoff", title: "退出 Herdr 98 布局", text: "注销可返回 Herdr 的常规布局，终端会继续运行。", go: "注销(&L)", act: { dialog: { kind: "logoff" } } },
     ];
     const it = items[this.sel] ?? items[0];
     const show = shared("win98.welcome") !== "off";
@@ -804,7 +804,7 @@ export default class Dialog {
               .items_end()
               .gap(u(6))
               .child(icon(u, "start", 32))
-              .child(div().text_size(u(22)).line_height(`${u(26)}px`).text_color(C.navy).child("Welcome to"))
+              .child(div().text_size(u(22)).line_height(`${u(26)}px`).text_color(C.navy).child("欢迎使用"))
               .child(div().text_size(u(22)).line_height(`${u(26)}px`).font_weight(700).text_color(C.text).child("Herdr"))
               .child(div().text_size(u(22)).line_height(`${u(26)}px`).text_color("#d07000").child("98")),
           ),
@@ -819,7 +819,7 @@ export default class Dialog {
               .p(u(8))
               .gap(u(2))
               .bg("#000080")
-              .child(div().pb(u(4)).text_color("#ffff80").font_weight(700).child("CONTENTS"))
+              .child(div().pb(u(4)).text_color("#ffff80").font_weight(700).child("目录"))
               .children(
                 items.map((x, i) =>
                   h_flex()
@@ -863,16 +863,16 @@ export default class Dialog {
           .p(u(8))
           .justify_between()
           .items_center()
-          .child(this.check(u, "wl-show", "&Show this screen each time Herdr 98 starts", show, () => setShared("win98.welcome", show ? "off" : "on")))
-          .child(this.btn(u, "close", "&Close", () => this.close())),
+          .child(this.check(u, "wl-show", "每次启动 Herdr 98 时显示此屏幕(&S)", show, () => setShared("win98.welcome", show ? "off" : "on")))
+          .child(this.btn(u, "close", "关闭(&C)", () => this.close())),
       );
   }
 
   renderBin(u) {
     return v_flex()
-      .child(this.explorer(u, [], "0 object(s)"))
+      .child(this.explorer(u, [], "0 个对象"))
       .child(div().h(u(8)))
-      .child(this.buttons(u, [this.btn(u, "empty", "&Empty Recycle Bin", () => sfx("recycle"), { w: 120 })], "end"));
+      .child(this.buttons(u, [this.btn(u, "empty", "清空回收站(&E)", () => sfx("recycle"), { w: 120 })], "end"));
   }
 
   render(_cx) {
@@ -896,7 +896,7 @@ export default class Dialog {
         network: () => this.renderNetwork(u),
         bin: () => this.renderBin(u),
         welcome: () => this.renderWelcome(u),
-      }[this.kind]?.() ?? div().p(u(10)).child(`Unknown dialog ${this.kind}`);
+      }[this.kind]?.() ?? div().p(u(10)).child(`未知对话框：${this.kind}`);
     const explorerish = ["mycomputer", "network", "bin"].includes(this.kind);
     const iconFor = { mycomputer: "computer", network: "network", bin: "bin", display: "display", run: "run", taskman: "taskman", datetime: "clock" }[this.kind];
     return root(

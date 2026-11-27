@@ -47,7 +47,7 @@ test("a broken settings.json is never written over, and says so", async () => {
   const { toasts } = await change(broken, (q) => (q.dock_bounce = true));
   expect(disk.raw).toBe(broken);
   expect(disk.writes).toBe(0);
-  expect(toasts).toEqual([{ title: "settings.json has errors: fix it first", level: "error" }]);
+  expect(toasts).toEqual([{ title: "settings.json 有错误，请先修正。", level: "error" }]);
 });
 
 test("settings.json that isn't an object counts as broken", async () => {
@@ -55,7 +55,7 @@ test("settings.json that isn't an object counts as broken", async () => {
     const { toasts } = await change(raw, (q) => (q.dock_bounce = true));
     expect(disk.raw).toBe(raw);
     expect(disk.writes).toBe(0);
-    expect(toasts).toEqual([{ title: "settings.json has errors: fix it first", level: "error" }]);
+    expect(toasts).toEqual([{ title: "settings.json 有错误，请先修正。", level: "error" }]);
   }
 });
 
@@ -63,14 +63,14 @@ test("a write that keeps failing is reported, not dropped", async () => {
   const { toasts } = await change("{}", (q) => (q.dock_bounce = true), "read-only file system");
   expect(disk.writes).toBe(3);
   expect(disk.raw).toBe("{}");
-  expect(toasts).toEqual([{ title: "Not saved to settings.json", body: "read-only file system", level: "error" }]);
+  expect(toasts).toEqual([{ title: "未能写入 settings.json。", body: "read-only file system", level: "error" }]);
 });
 
 test("a settings.json that can't be read, or an edit that throws, says why", async () => {
   const unread = await change("{}", (q) => (q.dock_bounce = true), undefined, "permission denied");
   expect(disk.writes).toBe(0);
-  expect(unread.toasts).toEqual([{ title: "Cannot read settings.json", body: "permission denied", level: "error" }]);
+  expect(unread.toasts).toEqual([{ title: "无法读取 settings.json。", body: "permission denied", level: "error" }]);
   const thrown = await change("{}", () => { throw new Error("no such section"); });
   expect(disk.writes).toBe(0);
-  expect(thrown.toasts).toEqual([{ title: "Cannot read settings.json", body: "no such section", level: "error" }]);
+  expect(thrown.toasts).toEqual([{ title: "无法读取 settings.json。", body: "no such section", level: "error" }]);
 });

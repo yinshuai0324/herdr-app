@@ -16,10 +16,10 @@ function place(s, all = panes()) {
 async function root(userHome) {
   const raw = await readTextFile(`${appHome()}/settings.json`);
   const directory = (raw === null ? {} : JSON.parse(raw))?.worktrees?.directory ?? "~/.herdr/worktrees";
-  if (typeof directory !== "string" || !directory.trim()) throw new Error("worktrees.directory must be a non-empty path.");
+  if (typeof directory !== "string" || !directory.trim()) throw new Error("worktrees.directory 必须指定一个目录。");
   let path = directory.replace(/\\/g, "/");
   if (path === "~" || path.startsWith("~/")) path = userHome.replace(/\\/g, "/").replace(/\/$/, "") + path.slice(1);
-  if (!path.startsWith("/") && !/^[A-Za-z]:\//.test(path)) throw new Error("worktrees.directory must be an absolute path or start with ~/.");
+  if (!path.startsWith("/") && !/^[A-Za-z]:\//.test(path)) throw new Error("worktrees.directory 必须是绝对路径，或以 ~/ 开头。");
   return path.replace(/\/+$/, "");
 }
 // Home as ~ (git says C:/Users/x where Windows says C:\Users\x).
@@ -99,12 +99,12 @@ async function modules(gitDir, config, on, out = [], parent = "") {
 // fetches that by hash, so it is often on no remote branch here).
 async function submodules(top, on) {
   const gitDir = await git(top, ["rev-parse", "--absolute-git-dir"], on);
-  if (!gitDir.ok) throw new Error(gitDir.err || "git rev-parse failed.");
+  if (!gitDir.ok) throw new Error(gitDir.err || "git rev-parse 执行失败。");
   const mods = await modules(gitDir.out, ["--file", `${top}/.gitmodules`], on);
   const unpushed = [];
   for (const m of mods) {
     const local = await git(gitDir.out, ["--git-dir", m.dir, "rev-list", "-n1", "--all", "--not", "--remotes", ...(m.pinned ? [m.pinned] : [])], on);
-    if (!local.ok) throw new Error(local.err || `Couldn't check submodule ${m.name}.`);
+    if (!local.ok) throw new Error(local.err || `无法检查子模块 ${m.name}.`);
     if (local.out) unpushed.push(m.name);
   }
   return { mods, unpushed };
@@ -130,7 +130,7 @@ export default class Worktree extends View {
     this.text = props()?.branch ?? "";
     this.list = undefined; // open: the checkouts, once read
     this.at = 0;
-    this.input = InputState.new({ value: this.text, placeholder: this.opening ? "filter worktrees" : "branch name" });
+    this.input = InputState.new({ value: this.text, placeholder: this.opening ? "筛选工作树" : "分支名称" });
     this.input.on("change", (_e, cx) => { this.text = this.input.value(); this.error = ""; this.at = 0; cx.notify(); });
     this.input.on("submit", (_e, cx) => this.go(cx));
     this.inputFocused = true;
@@ -150,7 +150,7 @@ export default class Worktree extends View {
           let result;
           try { result = await exec("sh", ["-c", 'printf %s "$HOME"'], { on: this.on }); } catch {}
           if (!result || result.code !== 0 || !result.stdout.trim()) result = await exec("powershell.exe", ["-NoProfile", "-Command", "[Console]::Write($HOME)"], { on: this.on });
-          if (result.code !== 0 || !result.stdout.trim()) throw new Error("Could not find the remote home folder.");
+          if (result.code !== 0 || !result.stdout.trim()) throw new Error("找不到远端用户目录。");
           this.userHome = result.stdout.trim().replace(/\\/g, "/");
         }
         if (!this.opening && props()?.action !== "remove") this.root = await root(this.userHome);
@@ -203,12 +203,12 @@ export default class Worktree extends View {
 
   async create() {
     const branch = this.text.trim();
-    if (!branch) return "Type a branch name.";
+    if (!branch) return "请输入分支名称。";
     const path = `${this.root}/${this.repo.name}/${slug(branch)}`;
     const exists = (await git(this.repo.main, ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], this.on)).ok;
     const add = exists ? ["worktree", "add", path, branch] : ["worktree", "add", "-b", branch, path, "HEAD"];
     const r = await git(this.repo.top, add, this.on, 600_000);
-    if (!r.ok) return r.err || "git worktree add failed.";
+    if (!r.ok) return r.err || "git worktree add 执行失败。";
     const p = props();
     // Leave spaces unnamed so they follow the checkout folder and nest under the repo.
     run("space.new", { folder: path, machine: this.on ?? "", tab: p.tab, argv: p.argv });
@@ -231,7 +231,7 @@ export default class Worktree extends View {
   async remove(cx) {
     const s = this.space();
     const status = await git(this.repo.top, ["--no-optional-locks", "-c", "core.fsmonitor=false", "status", "--porcelain"], this.on);
-    if (!status.ok) return status.err || "git status failed.";
+    if (!status.ok) return status.err || "git status 执行失败。";
     // git refuses a worktree with submodules unless forced, because their
     // history goes with it. The popup already showed what's at risk; only
     // risk that appeared since it opened gets one more warning.
@@ -239,13 +239,13 @@ export default class Worktree extends View {
     const changed = (status.out && !this.dirty) || unpushed.some((name) => !this.unpushed.includes(name));
     this.dirty ||= status.out !== "";
     this.unpushed = [...new Set([...this.unpushed, ...unpushed])];
-    if (changed) return "It changed since this opened. Enter again removes it anyway.";
+    if (changed) return "打开弹窗后工作树发生了变化。再次按 Enter 确认移除。";
     const list = await git(this.repo.main, ["-c", "core.quotePath=false", "worktree", "list", "--porcelain"], this.on);
-    if (!list.ok) return list.err || "git worktree list failed.";
+    if (!list.ok) return list.err || "git worktree list 执行失败。";
     const checkout = list.out.split(/\n\n+/).map((record) => record.split("\n"))
       .find(([path]) => path === `worktree ${this.repo.top}`);
     const lock = checkout?.find((field) => field === "locked" || field.startsWith("locked "));
-    if (lock) return lock === "locked" ? "This worktree is locked." : `This worktree is locked: ${lock.slice(7)}`;
+    if (lock) return lock === "locked" ? "此工作树已锁定。" : `此工作树已锁定：${lock.slice(7)}`;
 
     if (s?.id) {
       const tabs = new Set(s.tabs.map((tab) => tab.id));
@@ -255,12 +255,12 @@ export default class Worktree extends View {
     // Closing the space queues the kills. Wait for its programs to stop writing.
     const deadline = Date.now() + 10_000;
     while (this.closingTerminals?.size && terminals().some((t) => t.state === "live" && this.closingTerminals.has(t.address))) {
-      if (Date.now() >= deadline) return "The space's terminals haven't stopped yet. Press Enter to check again.";
+      if (Date.now() >= deadline) return "工作区的终端尚未停止。按 Enter 再次检查。";
       await cx.sleep(50);
     }
     const force = this.dirty || mods.length > 0;
     const r = await git(this.repo.main, ["worktree", "remove", ...(force ? ["--force"] : []), this.repo.top], this.on, 600_000);
-    if (!r.ok) return r.err || "git worktree remove failed.";
+    if (!r.ok) return r.err || "git worktree remove 执行失败。";
     return "";
   }
 
@@ -302,8 +302,8 @@ export default class Worktree extends View {
             .gap(8)
             .items_center()
             .child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(c.branch ?? "detached"))
-            .when(c.main, (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child("main checkout")))
-            .when(Boolean(there), (el) => el.child(div().flex_none().text_size(11).text_color(t.accent).child("open")))
+            .when(c.main, (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child("主工作树")))
+            .when(Boolean(there), (el) => el.child(div().flex_none().text_size(11).text_color(t.accent).child("已打开")))
             .when(!there && c.at > 0, (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child(ago(c.at)))),
         )
         .child(div().truncate().text_size(11.5).text_color(t.dim).child(tilde(c.path, this.userHome ?? "")));
@@ -318,9 +318,9 @@ export default class Worktree extends View {
       .gap(10)
       .bg(t.popover)
       .text_size(13)
-      .child(h_flex().child(div().flex_1().font_semibold().text_color(t.foreground).child(`Open worktree${r ? ` of ${r.name}` : ""}`)).child(div().text_size(11).text_color(t.dim).child(r ? count : "")))
+      .child(h_flex().child(div().flex_1().font_semibold().text_color(t.foreground).child(`打开 Git 工作树${r ? ` of ${r.name}` : ""}`)).child(div().text_size(11).text_color(t.dim).child(r ? count : "")))
       .when(r === undefined || (r && this.list === undefined), (el) => el.child(div().text_color(t.muted).child("\u2026")))
-      .when(r === null, (el) => el.child(div().text_color(t.muted).child(`${this.folder ? tilde(this.folder, this.userHome ?? "") : "This folder"} is not in a git repository.`)))
+      .when(r === null, (el) => el.child(div().text_color(t.muted).child(`${this.folder ? tilde(this.folder, this.userHome ?? "") : "当前文件夹"} 不在 Git 仓库中。`)))
       .when(Boolean(r && this.list), (el) =>
         el
           .child(Input.new(this.input).h(32).px(10).items_center().rounded(6).border(1).border_color(this.inputFocused ? t.accent : t.input).bg(t.background).text_color(t.foreground))
@@ -335,12 +335,12 @@ export default class Worktree extends View {
                   .size_full()
                   .overflow_y_scroll()
                   .children(rows.map(row))
-                  .when(rows.length === 0, (el) => el.child(div().p(10).text_color(t.dim).child("No matching worktrees."))),
+                  .when(rows.length === 0, (el) => el.child(div().p(10).text_color(t.dim).child("没有匹配的工作树。"))),
               )
               .child(Scrollbar.vertical("wt-list").absolute().inset_0()),
           ),
       )
-      .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("\u2191\u2193 choose \u00b7 \u21b5 open \u00b7 esc close"));
+      .child(h_flex().justify_end().text_size(11).text_color(t.dim).child("↑↓ 选择 · ↵ 打开 · Esc 关闭"));
   }
 
   render(cx) {
@@ -349,17 +349,17 @@ export default class Worktree extends View {
     const remove = props()?.action === "remove";
     const s = this.space();
     const r = this.repo;
-    const title = remove ? `Remove worktree ${s?.name ?? ""}?` : `New worktree${r ? ` of ${r.name}` : ""}`;
+    const title = remove ? `移除工作树 ${s?.name ?? ""}?` : `新建 Git 工作树${r ? ` of ${r.name}` : ""}`;
     const detail =
       r === undefined
         ? "…"
         : r === null
-          ? `${this.folder ? tilde(this.folder, this.userHome) : "This folder"} is not in a git repository.`
+          ? `${this.folder ? tilde(this.folder, this.userHome) : "当前文件夹"} 不在 Git 仓库中。`
           : remove
             ? !r.linked
-              ? "This is the repository's main checkout, not a worktree."
-              : `Closes the space and deletes ${tilde(r.top, this.userHome)}. The branch stays.`
-            : `A new space on a checkout in ${tilde(this.root, this.userHome)}/${r.name}/. A branch that exists is checked out; a new one starts from here.`;
+              ? "这是仓库的主工作树，无法在此移除。"
+              : `关闭工作区并删除 ${tilde(r.top, this.userHome)}。分支将保留。`
+            : `在以下位置检出并新建工作区：${tilde(this.root, this.userHome)}/${r.name}/。如果分支已存在，就检出它；否则从当前分支创建。`;
     const blocked = !r || (remove && !r.linked);
     return v_flex()
       .id("worktree")
@@ -372,8 +372,8 @@ export default class Worktree extends View {
       .text_size(13)
       .child(div().font_semibold().text_color(t.foreground).child(title))
       .child(div().text_color(t.muted).child(detail))
-      .when(remove && this.dirty, (el) => el.child(div().text_color(t.blocked).child("It has uncommitted changes: they will be lost.")))
-      .when(remove && this.unpushed.length > 0, (el) => el.child(div().text_color(t.blocked).child(`Submodule ${this.unpushed.join(", ")} has commits that aren't pushed anywhere: they will be lost.`)))
+      .when(remove && this.dirty, (el) => el.child(div().text_color(t.blocked).child("此工作树有未提交的更改，移除后这些更改会丢失。")))
+      .when(remove && this.unpushed.length > 0, (el) => el.child(div().text_color(t.blocked).child(`子模块 ${this.unpushed.join(", ")} 有尚未推送的提交，移除后这些提交会丢失。`)))
       .when(!remove && !blocked, (el) =>
         el.child(
           Input.new(this.input)
@@ -396,7 +396,7 @@ export default class Worktree extends View {
           .text_color(t.dim)
           .gap(6)
           .when(this.busy, (el) => el.child(div().frames(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"], 90)))
-          .child(this.busy ? "working…" : blocked ? "esc close" : remove ? "↵ remove · esc cancel" : "↵ create · esc cancel"),
+          .child(this.busy ? "处理中…" : blocked ? "Esc 关闭" : remove ? "↵ 移除 · Esc 取消" : "↵ 创建 · Esc 取消"),
       );
   }
 }

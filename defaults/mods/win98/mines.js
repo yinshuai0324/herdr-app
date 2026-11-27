@@ -119,24 +119,24 @@ export default class Mines {
       if (cmd === "marks" && !this.options.marks) this.cells.forEach((c) => { if (c.mark === 2) c.mark = 0; });
       this.save();
     } else if (cmd === "exit") { setApp("mines", null); this.reset(); }
-    else if (cmd === "best") openDialog("message", { title: "Fastest Mine Sweepers", text: ["Beginner", "Intermediate", "Expert"].map((s) => `${s}: ${this.options.best[s.toLowerCase()] ?? 999} seconds`).join("\n") });
+    else if (cmd === "best") openDialog("message", { title: "扫雷最佳成绩", text: ["初级", "中级", "高级"].map((s) => `${s}: ${this.options.best[s.toLowerCase()] ?? 999} seconds`).join("\n") });
   }
 
   menuItems(help) {
     if (help) return [
-      { label: "&Contents", act: { run: ["app.help"] } },
+      { label: "目录(&C)", act: { run: ["app.help"] } },
       { sep: true },
-      { label: "&About Mines...", act: { dialog: { kind: "message", title: "About Mines", text: "Mines\nHerdr 98\n\nFind all the mines without uncovering one.\nRight-click to mark a mine. Double-click a number to clear its neighbors." } } },
+      { label: "关于扫雷(&A)…", act: { dialog: { kind: "message", title: "关于扫雷", text: "扫雷\nHerdr 98\n\n找出所有地雷，避免点开雷格。右键可标记地雷，双击数字可打开周围安全格。" } } },
     ];
     const item = (name, cmd, extra = {}) => ({ label: name, ...extra, act: { shared: ["win98.mines.req", { cmd, t: Date.now() }] } });
-    return [item("&New", "new", { shortcut: "F2" }), { sep: true },
+    return [item("新游戏(&N)", "new", { shortcut: "F2" }), { sep: true },
       ...Object.keys(LEVELS).map((level) => item(`&${level[0].toUpperCase()}${level.slice(1)}`, level, { radio: level === this.options.level })),
-      { sep: true }, item("&Marks (?)", "marks", { checked: this.options.marks }), item("&Color", "color", { checked: this.options.color }), item("&Sound", "sound", { checked: this.options.sound }),
-      { sep: true }, item("&Best Times...", "best"), { sep: true }, item("E&xit", "exit")];
+      { sep: true }, item("使用问号标记(&M)", "marks", { checked: this.options.marks }), item("颜色(&C)", "color", { checked: this.options.color }), item("声音(&S)", "sound", { checked: this.options.sound }),
+      { sep: true }, item("最佳成绩(&B)…", "best"), { sep: true }, item("退出(&X)", "exit")];
   }
 
   menuBar(u) {
-    return own(h_flex().flex_none().h(u(18)).items_center().children(["&Game", "&Help"].map((name, i) =>
+    return own(h_flex().flex_none().h(u(18)).items_center().children(["游戏(&G)", "帮助(&H)"].map((name, i) =>
       bevel(u, shared("win98.menu.owner") === `mines-${i}` ? "well" : "flat", label(name), { pad: [0, 6] }).id(`mines-menu-${i}`).h(u(18)).justify_center()
         .on_mouse_down("left", (e, cx) => {
           cx.stop_propagation();
@@ -192,8 +192,8 @@ export default class Mines {
     const board = bevel(u, "pressed", rows, { pad: 1, bg: C.shadow }).flex_none();
     const body = own(v_flex().flex_none().p(u(5)).gap(u(6)).child(panel).child(board))
       .on_mouse_down_out((_e, cx) => { if (this.held >= 0) { this.held = -1; cx.notify(); } });
-    return root(u, win(u, { id: "mines", title: "Mines", icon: icon(u, "mines", 16), w: this.cols * 16 + 22,
-      controls: [["min", () => setApp("mines", "min"), "Minimize"], ["close", () => { setApp("mines", null); this.reset(); }, "Close"]],
+    return root(u, win(u, { id: "mines", title: "扫雷", icon: icon(u, "mines", 16), w: this.cols * 16 + 22,
+      controls: [["min", () => setApp("mines", "min"), "最小化"], ["close", () => { setApp("mines", null); this.reset(); }, "关闭"]],
       menu: this.menuBar(u), body,
     }));
   }

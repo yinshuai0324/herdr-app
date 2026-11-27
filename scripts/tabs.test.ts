@@ -173,5 +173,5 @@ test("a shell's title never replaces its tab's name", () => {
   const shell = { program: { name: "zsh", key: "zsh" }, title: "vim notes.md" };
   expect(label({ name: "", named: false }, shell)).toBe("zsh");
   expect(label({ name: "notes", named: true }, shell)).toBe("notes");
-  expect(label({ name: "", named: false }, undefined)).toBe("Terminal");
+  expect(label({ name: "", named: false }, undefined)).toBe("终端");
 });

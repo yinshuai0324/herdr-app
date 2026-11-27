@@ -91,7 +91,7 @@ function diffRows(lines) {
 export default class Changes extends View {
   init(_props, cx) {
     this.files = []; this.rows = []; this.longest = 0; this.gutterChars = 4; this.message = ""; this.handle = cx.focus_handle();
-    this.input = InputState.new({ placeholder: "Commit message" });
+    this.input = InputState.new({ placeholder: "提交说明" });
     this.input.on("change", (_e, cx) => {
       const hadMessage = Boolean(this.message.trim());
       this.message = this.input.value();
@@ -174,7 +174,7 @@ export default class Changes extends View {
       try {
         const top = await exec("git", ["rev-parse", "--show-toplevel"], { cwd, on });
         if (!this.current(context)) return;
-        if (top.code !== 0) { this.root = null; this.files = []; this.setLines([]); this.open = null; this.error = "Not a git repository"; return; }
+        if (top.code !== 0) { this.root = null; this.files = []; this.setLines([]); this.open = null; this.error = "当前目录不是 Git 仓库"; return; }
         const root = top.stdout.trim(), git = (args) => exec("git", [...READ, ...args], { cwd: root, on });
         this.watch(root, context, cx);
         const scan = await repoStatus(root, on, request, cx, () => this.context === context);
@@ -217,7 +217,7 @@ export default class Changes extends View {
         if (!this.open && !this.closed && files.length) this.open = files[0].path;
         if (this.open) {
           try { await this.load(this.open, context); }
-          catch { if (this.current(context)) this.setLines(["Cannot preview this diff (too large or unreadable)"]); }
+          catch { if (this.current(context)) this.setLines(["无法预览差异，内容过大或无法读取。"]); }
         }
       } catch (e) { if (this.current(context)) this.error = String(e); }
       finally {
@@ -233,8 +233,8 @@ export default class Changes extends View {
     let lines;
     if (file.fresh || (!this.hasHead && file.status === "A")) {
       const text = await readTextFile(`${root}/${path}`, { on }).catch(() => null);
-      if (text === null) lines = ["Cannot preview this file (binary, too large, or unreadable)"];
-      else if (text.includes("\0")) lines = ["Binary file · no text diff"];
+      if (text === null) lines = ["无法预览文件，可能为二进制文件、过大或无法读取。"];
+      else if (text.includes("\0")) lines = ["二进制文件 · 无文本差异"];
       else {
         file.add = countLines(text);
         lines = [`@@ -0,0 +1,${file.add} @@`, ...text.slice(0, 400000).replace(/\n$/, "").split("\n").slice(0, 1500).map(l => `+${l}`)];
@@ -243,9 +243,9 @@ export default class Changes extends View {
       const r = await exec("git", [...READ, "diff", ...(this.hasHead ? ["HEAD"] : []), "--no-ext-diff", "--no-textconv", "--no-color", "--", path], { cwd: root, on });
       if (r.code !== 0) throw new Error(r.stderr);
       const all = r.stdout.replace(/\n$/, "").split("\n"), first = all.findIndex((l) => l.startsWith("@@"));
-      lines = first < 0 ? [file.binary ? "Binary file changed" : "No text diff available"] : all.slice(first);
+      lines = first < 0 ? [file.binary ? "二进制文件已更改" : "没有可显示的文本差异"] : all.slice(first);
     }
-    if (this.current(context) && this.open === path) this.setLines(lines.slice(0, 1500).map(line => line.length > 4000 ? line.slice(0, 4000) + "… (line truncated)" : line));
+    if (this.current(context) && this.open === path) this.setLines(lines.slice(0, 1500).map(line => line.length > 4000 ? line.slice(0, 4000) + "…（此行已截断）" : line));
   }
 
   setLines(lines) {
@@ -260,7 +260,7 @@ export default class Changes extends View {
     const context = this.context;
     if (this.open) cx.spawn(async (cx) => {
       try { await this.load(path, context); }
-      catch (e) { if (this.current(context) && this.open === path) this.note = `Cannot preview this diff (too large or unreadable): ${e}`; }
+      catch (e) { if (this.current(context) && this.open === path) this.note = `无法预览差异，内容过大或无法读取：${e}`; }
       cx.notify();
     });
     cx.notify();
@@ -277,7 +277,7 @@ export default class Changes extends View {
           if (r.code !== 0) throw new Error((r.stderr || r.stdout).trim());
         }
         if (this.current(context)) { this.message = ""; this.input.set_value(""); }
-      } catch (e) { if (this.current(context)) this.note = `Commit failed: ${e}`; }
+      } catch (e) { if (this.current(context)) this.note = `提交失败：${e}`; }
       finally { this.busy = false; this.refresh(cx, true); cx.notify(); }
     });
     cx.notify();
@@ -303,7 +303,7 @@ export default class Changes extends View {
         if (e.key === "escape" && this.typing) { this.typing = false; this.handle.focus(); cx.stop_propagation(); cx.notify(); }
       })
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
-        .child(div().font_semibold().child("Changes"))
+        .child(div().font_semibold().child("更改"))
         .child(div().px(5).py(1).rounded(4).border_1().border_color(t.border).text_size(10).text_color(t.muted).child(`${this.files.length} files`))
         .child(div().flex_1()).child(div().text_size(11).text_color(t.ansi2).child(`+${add}`)).child(div().text_size(11).text_color(t.ansi1).child(`−${del}`)))
       // overflow_y_scrollbar() wraps the list, so its flex sizing never reached the panel's layout.
@@ -314,18 +314,18 @@ export default class Changes extends View {
           .child(div().w(14).text_size(11).text_color(f.status === "A" ? t.ansi2 : f.status === "D" ? t.ansi1 : f.status === "U" ? t.ansi1 : t.blocked).child(f.status))
           .child(h_flex().flex_1().min_w(0).child(div().text_color(t.dim).truncate().child(parts.length ? parts.join("/") + "/" : "")).child(div().max_w(260).min_w(0).truncate().child(name)))
           .when(f.add > 0, (e) => e.child(div().text_size(11).text_color(t.ansi2).child(`+${f.add}`))).when(f.del > 0, (e) => e.child(div().text_size(11).text_color(t.ansi1).child(`−${f.del}`)));
-      })).when(!this.files.length, (e) => e.child(div().p(8).text_color(t.dim).child(this.error || (this.loading ? "Loading changes…" : this.root ? "No uncommitted changes" : "No folder")))))
+      })).when(!this.files.length, (e) => e.child(div().p(8).text_color(t.dim).child(this.error || (this.loading ? "正在加载更改…" : this.root ? "没有未提交的更改" : "未选择文件夹")))))
         .child(Scrollbar.vertical("changes-list").absolute().inset_0()))
-      .when(this.limited, el => el.child(div().px(12).py(4).text_size(11).text_color(t.dim).child("Showing the first 1,000 changed files")))
+      .when(this.limited, el => el.child(div().px(12).py(4).text_size(11).text_color(t.dim).child("仅显示前 1,000 个已更改的文件")))
       .child(div().flex_1().min_h(0).relative().font_family(settings().font_family ?? "JetBrains Mono").text_size(size)
         .child(div().id("changes-diff-x").size_full().overflow_x_scrollbar()
           .child(div().w_full().min_w(Math.max(300, this.longest * charWidth(size) + this.gutter(size) + 20)).h_full().child(v_virtual_list("changes-diff", this.rows.length, rowHeight(size), (i) => String(i),
             (range) => this.rows.slice(range.start, range.end).map((row) => this.diffRow(row, t, size))).size_full())))
         .child(Scrollbar.vertical("changes-diff").viewport_from_layout().absolute().inset_0())
-        .when(!this.open && this.files.length > 0, (e) => e.child(div().absolute().top(6).px(12).text_size(11).text_color(t.dim).child("Select a file to view its changes"))))
+        .when(!this.open && this.files.length > 0, (e) => e.child(div().absolute().top(6).px(12).text_size(11).text_color(t.dim).child("选择文件以查看更改"))))
       .when(Boolean(this.note), (e) => e.child(div().px(10).pb(8).text_size(11).text_color(t.ansi1).child(this.note)))
       .child(h_flex().flex_none().p(10).gap(8).border_t(1).border_color(t.border)
         .child(div().id("commit-message").flex_1().min_w(0).h(32).px(10).flex().items_center().rounded(8).border_1().border_color(this.typing ? t.accent : t.border).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation()).child(Input.new(this.input).h_full().text_size(12).text_color(t.foreground)))
-        .child(div().id("commit").h(32).px(14).flex().items_center().rounded(8).bg(enabled ? t.solid : t.raised).text_color(enabled ? t.solid_foreground : t.dim).text_size(12).when(enabled, (e) => e.cursor_pointer()).on_click((_e, cx) => this.commit(cx)).child(this.busy ? "Committing…" : "Commit")));
+        .child(div().id("commit").h(32).px(14).flex().items_center().rounded(8).bg(enabled ? t.solid : t.raised).text_color(enabled ? t.solid_foreground : t.dim).text_size(12).when(enabled, (e) => e.cursor_pointer()).on_click((_e, cx) => this.commit(cx)).child(this.busy ? "正在提交…" : "提交")));
   }
 }

@@ -7,17 +7,17 @@ import { spaces, run, theme, props, closeOverlay, setShared, shared, hc, appHome
 const I = (name) => `frame/welcome/${name}.svg`;
 const W = (name) => `mods/workspace-chrome/${name}.svg`;
 const PAGES = 4;
-const ASK = "Read ~/.config/herdr-app/AGENTS.md, then tell me what you can change in Herdr.";
-const MIGRATE = "Read `herdr-app --skill`, then migrate my keybinds and settings from ~/.config/herdr/config.toml";
+const ASK = "阅读 ~/.config/herdr-app/AGENTS.md，然后告诉我可以自定义 Herdr 的哪些部分。";
+const MIGRATE = "阅读 `herdr-app --skill`，然后从 ~/.config/herdr/config.toml 迁移我的快捷键和设置。";
 const APPEARANCES = [
-  [null, "System"],
-  ["light", "Light"],
-  ["dark", "Dark"],
+  [null, "跟随系统"],
+  ["light", "浅色"],
+  ["dark", "深色"],
 ];
 // The panels the layout offers (its "panel-body" stack), as the tab bar's buttons.
 const PANELS = [
-  { id: "files", icon: "files", title: "Files", about: "The folder you're in as a tree. Open a file to read it, highlighted." },
-  { id: "changes", icon: "git-compare", title: "Changes", about: "What your agents changed: every file with its diff, and a commit box." },
+  { id: "files", icon: "files", title: "文件", about: "以目录树显示当前文件夹，打开文件即可查看带语法高亮的内容。" },
+  { id: "changes", icon: "git-compare", title: "更改", about: "查看代理改过的文件及其差异，也可以直接填写提交说明。" },
 ];
 
 // The key bound to a command, as people press it: "Ctrl+Shift+P".
@@ -253,7 +253,7 @@ export default class Welcome extends View {
               this.copied = id;
               cx.notify();
             })
-            .child(copied ? "Copied" : "Copy"),
+            .child(copied ? "已复制" : "复制"),
         ),
       );
   }
@@ -271,11 +271,11 @@ export default class Welcome extends View {
           .gap(10)
           .items_center()
           .child(svg(I("terminal")).size(16).text_color(t.muted))
-          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("Coming from herdr?")),
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("此前用过 Herdr？")),
       )
-      .child(this.para(t, "This is a new app on a new core. Your herdr workspaces stay where they are; nothing moves over."))
-      .child(this.para(t, "Same idea as before: spaces, tabs and terminals."))
-      .child(this.para(t, "Want your keybinds and settings carried over? Give your agent this line:"))
+      .child(this.para(t, "此应用使用新的运行时，原有 Herdr 工作区仍保存在原处。"))
+      .child(this.para(t, "仍然使用熟悉的工作区、标签页和终端。"))
+      .child(this.para(t, "要迁移快捷键和设置，可以把这条命令交给代理："))
       .child(this.copyLine(t, MIGRATE, "w-migrate-copy"));
   }
 
@@ -284,13 +284,13 @@ export default class Welcome extends View {
   pageOne(t) {
     return v_flex()
       .gap(18)
-      .child(this.title(t, "Herdr runs your terminals in the background", "The terminals and agents you open here don't live in this window. They run in herdr-core, a small background program on your computer. Close Herdr, update it, or let it crash, and your agents keep working. Open it again and everything is where you left it, as long as the computer is on."))
-      .child(this.feature(t, "bot", "Agents tell you when they need you", "A ring while one works, \u201cNeeds you\u201d when it asks something, a sound when it finishes."))
-      .child(this.feature(t, "messages", "Agents can start helpers", "They show up under the agent that started them. Click one to watch it."))
-      .child(this.feature(t, "layers", "Your other machines, in the same window", "A server or a Mac mini runs its own herdr-core, so its agents keep going even while this laptop sleeps."))
+      .child(this.title(t, "Herdr 在后台运行你的终端", "终端和代理由后台的 herdr-core 运行。电脑开机时，关闭窗口、更新或应用崩溃都不会结束它们。重新打开 Herdr 即可接着工作。"))
+      .child(this.feature(t, "bot", "代理会在需要你时提醒", "运行时有进度环，等待输入时显示「需要你处理」，完成时会播放提示音。"))
+      .child(this.feature(t, "messages", "代理可以启动助手", "助手会显示在启动它的代理下方。点击即可查看进度。"))
+      .child(this.feature(t, "layers", "在同一窗口管理其他主机", "服务器或 Mac mini 可以运行自己的 herdr-core，这台电脑休眠时，远端代理仍能继续运行。"))
       .child(div().h(1).bg(t.border))
-      .child(h_flex().gap(10).items_center().child(div().w(84).text_size(13).text_color(t.muted).child("Appearance")).child(this.segment(t, APPEARANCES, this.appearance, (v, cx) => this.setAppearance(v, cx))))
-      .child(h_flex().gap(10).items_center().child(div().w(84).text_size(13).text_color(t.muted).child("Size")).child(this.sizeControl(t)))
+      .child(h_flex().gap(10).items_center().child(div().w(84).text_size(13).text_color(t.muted).child("外观")).child(this.segment(t, APPEARANCES, this.appearance, (v, cx) => this.setAppearance(v, cx))))
+      .child(h_flex().gap(10).items_center().child(div().w(84).text_size(13).text_color(t.muted).child("界面大小")).child(this.sizeControl(t)))
       .child(this.comingFromHerdr(t));
   }
 
@@ -311,7 +311,7 @@ export default class Welcome extends View {
   pageTwo(t) {
     return v_flex()
       .gap(18)
-      .child(this.title(t, "Add your other machines", "Pick a host from your ssh config. Herdr connects, installs herdr-core there if it's missing, and lists that machine in the sidebar with its own spaces."))
+      .child(this.title(t, "添加其他主机", "从 SSH 配置中选择主机。Herdr 会连接并按需安装 herdr-core，然后在侧栏显示该主机及其工作区。"))
       .child(
         v_flex()
           .rounded(12)
@@ -319,11 +319,11 @@ export default class Welcome extends View {
           .border_color(t.border)
           .bg(t.background)
           .overflow_hidden()
-          .child(this.machineRow(t, "monitor", "This computer", "here", true))
+          .child(this.machineRow(t, "monitor", "本机", "here", true))
           .children(this.machines.map((m) => v_flex()
             .child(this.machineRow(t, "server", m.name, m.state === "connected" ? "connected" : (m.state ?? "offline").replace(/_/g, " "), m.state === "connected"))
             .when(m.state === "needs_login", el => el.child(v_flex().p(12).gap(6)
-              .child(div().text_size(12).text_color(t.blocked).child("needs a login: run"))
+              .child(div().text_size(12).text_color(t.blocked).child("需要登录。请运行"))
               .child(this.copyLine(t, `hc machine login ${m.name}`, `w-login-copy-${m.name}`))))))
           .child(
             h_flex()
@@ -339,10 +339,10 @@ export default class Welcome extends View {
               .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
               .on_click(() => run("mod.open", { name: "machine-add" }))
               .child(svg(W("plus")).size(15))
-              .child("Add a machine"),
+              .child("添加主机"),
           ),
       )
-      .child(this.para(t, "Not now? Add machine is at the bottom of the sidebar too."));
+      .child(this.para(t, "也可以之后在侧栏底部使用「添加主机」。"));
   }
 
   panelCard(t, p) {
@@ -399,7 +399,7 @@ export default class Welcome extends View {
     if (shared("workspace.panels") === undefined || shared("workspace.panels") === null) setShared("workspace.panels", []);
     return v_flex()
       .gap(14)
-      .child(this.title(t, "Choose your panels", "Herdr comes with a couple of panels. Turn one on and it appears beside your terminals. Drag this window aside to see it. Later, the buttons in the tab bar open and close them."))
+      .child(this.title(t, "选择要显示的面板", "启用内置面板后，它会出现在终端旁边。拖开这个窗口即可查看，之后可以使用标签栏按钮开关面板。"))
       .children(PANELS.map((p) => this.panelCard(t, p)))
       .child(
         h_flex()
@@ -408,7 +408,7 @@ export default class Welcome extends View {
           .p(12)
           .rounded(10)
           .bg(t.raised)
-          .child(this.para(t, "Ask your agent for a board of your agents, your pull requests, a cost meter, or the sidebar on the right. Not sure what's possible? Ask it that too.")),
+          .child(this.para(t, "你可以让代理添加代理面板、拉取请求列表或费用统计，也可以让它把侧栏移到右边。")),
       );
   }
 
@@ -432,22 +432,22 @@ export default class Welcome extends View {
                 .flex_1()
                 .min_w(0)
                 .gap(2)
-                .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("One key opens everything"))
-                .child(this.para(t, "It opens the command palette, with every action by name and its key. It works the same in every layout.")),
+                .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("通过快捷键打开命令面板"))
+                .child(this.para(t, "命令面板显示操作名称和快捷键，所有布局都可以使用。")),
             ),
         ),
       )
-      .child(this.title(t, "Make it yours", "Every part of this window is a layout or a mod: plain files your agent can change or add to. Give it this line to start:"))
+      .child(this.title(t, "自定义 Herdr", "每个界面部分都由布局或扩展组成，代理可以修改这些文件或添加新的。把下方提示交给代理即可开始。"))
       .child(this.copyLine(t, ASK))
-      .child(this.para(t, "Then ask for anything: \u201cmove the sidebar to the right\u201d, \u201ca panel with my pull requests\u201d."))
+      .child(this.para(t, "例如，让代理「把侧栏移到右边」或「添加我的拉取请求面板」。"))
       .child(
         v_flex()
           .gap(6)
           .p(12)
           .rounded(10)
           .bg(t.raised)
-          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("Your terminals, outside this window too"))
-          .child(this.para(t, "hc is herdr-core's command line. In any terminal, hc ls lists everything running and hc attach t3 jumps into one. Your agents can use it to start and watch other agents for you. Tell them to read hc's help, or make it a skill.")),
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("也可以在窗口外管理终端"))
+          .child(this.para(t, "hc 是 herdr-core 的命令行工具。运行 hc ls 查看正在运行的终端，运行 hc attach t3 进入其中一个。代理也可以用 hc 启动和查看其他代理。")),
       )
       .child(
         v_flex()
@@ -455,10 +455,10 @@ export default class Welcome extends View {
           .p(12)
           .rounded(10)
           .bg(t.raised)
-          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("More examples in Settings"))
-          .child(this.para(t, "Settings \u203a Look has more layouts to try or start from, Herdr 98 among them. Your agent can copy any of them and change anything.")),
+          .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("在设置中查看更多布局"))
+          .child(this.para(t, "在「设置 › 外观」可以试用 Herdr 98 等布局，也可让代理复制布局并按需修改。")),
       )
-      .child(this.para(t, "Something off or missing? Settings \u203a Send feedback. We read every one."));
+      .child(this.para(t, "遇到问题或有建议？请在「设置 › 发送反馈」告诉我们。"));
   }
 
   render() {
@@ -500,10 +500,10 @@ export default class Welcome extends View {
           .border_b(1)
           .border_color(t.border)
           .child(image("frame/welcome/herdr.png").w(24).h(24).rounded(6).flex_none())
-          .child(div().text_size(14).font_semibold().text_color(t.foreground).child("Welcome to Herdr"))
-          .child(div().px(6).py(0.5).rounded(5).border_1().border_color(t.input).text_color(t.muted).text_size(10.5).font_semibold().child("BETA"))
+          .child(div().text_size(14).font_semibold().text_color(t.foreground).child("欢迎使用 Herdr"))
+          .child(div().px(6).py(0.5).rounded(5).border_1().border_color(t.input).text_color(t.muted).text_size(10.5).font_semibold().child("测试版"))
           .child(div().flex_1())
-          .child(div().text_size(11.5).text_color(t.dim).child("Drag to move"))
+          .child(div().text_size(11.5).text_color(t.dim).child("拖动移动"))
           .child(
             div()
               .id("w-close")
@@ -551,11 +551,11 @@ export default class Welcome extends View {
           .border_color(t.border)
           .child(div().pl(6).child(dots))
           .child(div().flex_1())
-          .when(this.page > 1, (el) => el.child(this.button(t, "w-back", "Back", false, (_e, cx) => go(this.page - 1, cx))))
+          .when(this.page > 1, (el) => el.child(this.button(t, "w-back", "上一步", false, (_e, cx) => go(this.page - 1, cx))))
           .child(
             this.page < PAGES
-              ? this.button(t, "w-next", this.page === 2 && !this.machines.length ? "Not now" : "Next", true, (_e, cx) => go(this.page + 1, cx), "arrow-right")
-              : this.button(t, "w-start", spaces().length ? "Done" : "Open a space", true, () => this.start(), "arrow-right"),
+              ? this.button(t, "w-next", this.page === 2 && !this.machines.length ? "暂时跳过" : "下一步", true, (_e, cx) => go(this.page + 1, cx), "arrow-right")
+              : this.button(t, "w-start", spaces().length ? "完成" : "打开工作区", true, () => this.start(), "arrow-right"),
           ),
       );
   }

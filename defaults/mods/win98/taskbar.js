@@ -26,7 +26,7 @@ const AGENTS = [
   ["crush", "Crush", "icons/crush.svg"],
 ];
 
-const GAMES = { mines: ["Mines", "mines"], sol: ["Solitaire", "sol"] };
+const GAMES = { mines: ["扫雷", "mines"], sol: ["纸牌", "sol"] };
 
 function lead(all, tab) {
   const mine = all.filter((p) => p.tab === tab);
@@ -38,11 +38,11 @@ function clock(d) {
   const m = String(d.getMinutes()).padStart(2, "0");
   const pm = h >= 12;
   h = h % 12 || 12;
-  return `${h}:${m} ${pm ? "PM" : "AM"}`;
+  return `${h}:${m} ${pm ? "下午" : "上午"}`;
 }
 
 function longDate(d) {
-  return d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString("zh-CN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 }
 
 /** Seconds since the Herdr app started (exec's parent), or null where ps can't say. */
@@ -60,7 +60,7 @@ async function appAge() {
 
 export function userName() {
   const h = home() ?? "";
-  const n = h.split(/[\\/]/).filter(Boolean).pop() ?? "User";
+  const n = h.split(/[\\/]/).filter(Boolean).pop() ?? "用户";
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 
@@ -130,14 +130,14 @@ export default class Taskbar {
       case "start":
         return this.toggleStart(this.startBounds ?? (this.screen ? { x: this.screen.x, y: this.screen.y } : null));
       case "new_tab":
-        return openDialog("prompt", { title: "New Tab", text: "Type a name for the new tab:", icon: "dos", command: { name: "tab.new", args: {} } });
+        return openDialog("prompt", { title: "新建标签页", text: "为新标签页命名：", icon: "dos", command: { name: "tab.new", args: {} } });
       case "new_space":
-        return openDialog("prompt", { title: "New Space", text: "Type a name for the new space:", icon: "folder", machines: true, command: { name: "space.new", args: {} } });
+        return openDialog("prompt", { title: "新建工作区", text: "为新工作区命名：", icon: "folder", machines: true, command: { name: "space.new", args: {} } });
       case "rename_tab":
-        if (tab) openDialog("prompt", { title: "Rename", text: "Type a new name for this tab:", icon: "rename", value: tab.name, command: { name: "tab.rename", args: { id: tab.id } } });
+        if (tab) openDialog("prompt", { title: "重命名", text: "输入标签页的新名称：", icon: "rename", value: tab.name, command: { name: "tab.rename", args: { id: tab.id } } });
         return;
       case "rename_space":
-        if (s) openDialog("prompt", { title: "Rename", text: "Type a new name for this space:", icon: "folder", value: s.name, command: { name: "space.rename", args: { id: s.id } } });
+        if (s) openDialog("prompt", { title: "重命名", text: "输入工作区的新名称：", icon: "folder", value: s.name, command: { name: "space.rename", args: { id: s.id } } });
         return;
       case "close_tab":
         if (tab) openDialog("confirm", closeTabAsk(s, tab));
@@ -212,54 +212,54 @@ export default class Taskbar {
       act: { run: ["layout.switch", { name }] },
     }));
     return [
-      { label: "Herdr Update", icon: "update", act: { run: ["app.settings", { section: "updates" }] } },
+      { label: "Herdr 更新", icon: "update", act: { run: ["app.settings", { section: "updates" }] } },
       { sep: true },
       {
-        label: "&Programs",
+        label: "程序(&P)",
         icon: "programs",
         sub: [
           {
-            label: "Accessories",
+            label: "附件",
             icon: "programs",
             sub: [
-              { label: "Games", icon: "programs", sub: [
-                { label: "Mines", icon: "mines", act: { app: "mines" } },
-                { label: "Solitaire", icon: "sol", act: { app: "sol" } },
+              { label: "游戏", icon: "programs", sub: [
+                { label: "扫雷", icon: "mines", act: { app: "mines" } },
+                { label: "纸牌", icon: "sol", act: { app: "sol" } },
               ] },
-              { label: "Office Assistant", icon: "clippy", act: { shared: ["win98.clippy", "on"] } },
-              { label: "Welcome to Herdr 98", icon: "start", act: { dialog: { kind: "welcome" } } },
-              { label: "Command Palette", icon: "find", act: { run: ["app.palette", {}] } },
+              { label: "Office 助手", icon: "clippy", act: { shared: ["win98.clippy", "on"] } },
+              { label: "欢迎使用 Herdr 98", icon: "start", act: { dialog: { kind: "welcome" } } },
+              { label: "命令面板", icon: "find", act: { run: ["app.palette", {}] } },
             ],
           },
-          { label: "Agents", icon: "programs", sub: agentItems.length ? agentItems : [{ label: "(Empty)", disabled: true }] },
-          { label: "DOS Prompt", icon: "dos", act: { run: ["tab.new", { name: "DOS Prompt" }] } },
-          { label: "New Space...", icon: "folder", act: { dialog: { kind: "prompt", title: "New Space", text: "Type a name for the new space:", icon: "folder", machines: true, command: { name: "space.new", args: {} } } } },
+          { label: "代理", icon: "programs", sub: agentItems.length ? agentItems : [{ label: "（空）", disabled: true }] },
+          { label: "DOS 提示符", icon: "dos", act: { run: ["tab.new", { name: "DOS 提示符" }] } },
+          { label: "新建工作区…", icon: "folder", act: { dialog: { kind: "prompt", title: "新建工作区", text: "为新工作区命名：", icon: "folder", machines: true, command: { name: "space.new", args: {} } } } },
         ],
       },
-      { label: "&Spaces", icon: "documents", sub: spaceItems.length ? spaceItems : [{ label: "(Empty)", disabled: true }] },
+      { label: "工作区(&S)", icon: "documents", sub: spaceItems.length ? spaceItems : [{ label: "（空）", disabled: true }] },
       {
-        label: "S&ettings",
+        label: "设置(&E)",
         icon: "settings",
         sub: [
-          { label: "&Control Panel", icon: "control", act: { run: ["app.settings", {}] } },
-          { label: "&Display...", icon: "display", act: { dialog: { kind: "display" } } },
-          { label: "&Layouts", icon: "programs", sub: layoutItems },
-          { label: "&Taskbar & Start Menu...", icon: "taskbar", act: { dialog: { kind: "display" } } },
+          { label: "控制面板(&C)", icon: "control", act: { run: ["app.settings", {}] } },
+          { label: "显示(&D)…", icon: "display", act: { dialog: { kind: "display" } } },
+          { label: "布局(&L)", icon: "programs", sub: layoutItems },
+          { label: "任务栏和开始菜单(&T)…", icon: "taskbar", act: { dialog: { kind: "display" } } },
         ],
       },
       {
-        label: "&Find",
+        label: "查找(&F)",
         icon: "find",
         sub: [
-          { label: "&Commands...", icon: "find", act: { run: ["app.palette", {}] } },
-          { label: "&Agents...", icon: "find", act: { dialog: { kind: "taskman" } } },
+          { label: "命令(&C)…", icon: "find", act: { run: ["app.palette", {}] } },
+          { label: "代理(&A)…", icon: "find", act: { dialog: { kind: "taskman" } } },
         ],
       },
-      { label: "&Help", icon: "help", act: { run: ["app.help", {}] } },
-      { label: "&Run...", icon: "run", act: { dialog: { kind: "run" } } },
+      { label: "帮助(&H)", icon: "help", act: { run: ["app.help", {}] } },
+      { label: "运行(&R)…", icon: "run", act: { dialog: { kind: "run" } } },
       { sep: true },
-      { label: `&Log Off ${userName()}...`, icon: "logoff", act: { dialog: { kind: "logoff" } } },
-      { label: "Sh&ut Down...", icon: "shutdown", act: { dialog: { kind: "shutdown" } } },
+      { label: `注销(&L) ${userName()}...`, icon: "logoff", act: { dialog: { kind: "logoff" } } },
+      { label: "关闭(&U)…", icon: "shutdown", act: { dialog: { kind: "shutdown" } } },
     ];
   }
 
@@ -322,13 +322,13 @@ export default class Taskbar {
         tooltip: `${t.name}${p?.program ? ` - ${p.program.name}` : ""}${t.status ? ` (${t.status})` : ""}`,
         onRight: () =>
           openMenu([
-            { label: "&Restore", act: { run: ["tab.select", { id: t.id }] }, disabled: pressed },
-            { label: "Mi&nimize", act: { run: ["tab.settle", { id: t.id }] }, disabled: t.settled },
-            { label: "Ma&ximize", act: { run: ["pane.zoom", {}] }, disabled: !t.active },
+            { label: "还原(&R)", act: { run: ["tab.select", { id: t.id }] }, disabled: pressed },
+            { label: "最小化(&N)", act: { run: ["tab.settle", { id: t.id }] }, disabled: t.settled },
+            { label: "最大化(&X)", act: { run: ["pane.zoom", {}] }, disabled: !t.active },
             { sep: true },
-            { label: "Re&name...", act: { dialog: { kind: "prompt", title: "Rename", text: "Type a new name for this tab:", icon: "rename", value: t.name, command: { name: "tab.rename", args: { id: t.id } } } } },
+            { label: "重命名(&N)…", act: { dialog: { kind: "prompt", title: "重命名", text: "输入标签页的新名称：", icon: "rename", value: t.name, command: { name: "tab.rename", args: { id: t.id } } } } },
             { sep: true },
-            { label: "&Close", bold: true, shortcut: "Alt+F4", act: { run: ["tab.close", { id: t.id }] } },
+            { label: "关闭(&C)", bold: true, shortcut: "Alt+F4", act: { run: ["tab.close", { id: t.id }] } },
           ]),
       },
     )
@@ -356,10 +356,10 @@ export default class Taskbar {
       h: 22,
       onRight: () =>
         openMenu([
-          { label: "&Restore", act: { app: key }, disabled: open },
-          { label: "Mi&nimize", act: { shared: ["win98.apps", { ...apps(), [key]: "min" }] }, disabled: !open },
+          { label: "还原(&R)", act: { app: key }, disabled: open },
+          { label: "最小化(&N)", act: { shared: ["win98.apps", { ...apps(), [key]: "min" }] }, disabled: !open },
           { sep: true },
-          { label: "&Close", bold: true, act: { shared: ["win98.apps", Object.fromEntries(Object.entries(apps()).filter(([k]) => k !== key))] } },
+          { label: "关闭(&C)", bold: true, act: { shared: ["win98.apps", Object.fromEntries(Object.entries(apps()).filter(([k]) => k !== key))] } },
         ]),
     })
       .flex_1()
@@ -407,7 +407,7 @@ export default class Taskbar {
           .id(`tray-${a.address}`)
           .relative()
           .flex_none()
-          .tooltip(`${a.program?.name ?? a.app ?? "Agent"}: ${a.status} - ${a.space_name} \\ ${a.tab_name}`)
+          .tooltip(`${a.program?.name ?? a.app ?? "代理"}: ${a.status} - ${a.space_name} \\ ${a.tab_name}`)
           .on_click(() => run("agent.focus", { terminal: a.address }))
           .child(programIcon(u, a.program, 16))
           .when(Boolean(badge), (el) =>
@@ -429,7 +429,7 @@ export default class Taskbar {
       .px(u(2))
       .children(icons)
       .child(
-        own(div().id("tray-speaker").flex_none().tooltip(mute ? "Sounds: off" : "Volume").on_click((_e, cx) => {
+        own(div().id("tray-speaker").flex_none().tooltip(mute ? "声音：关闭" : "音量").on_click((_e, cx) => {
           setShared("win98.mute", !mute);
           cx.notify();
         })).child(icon(u, mute ? "speaker-mute" : "speaker", 16)),
@@ -464,7 +464,7 @@ export default class Taskbar {
     const start = button(
       u,
       "start",
-      h_flex().gap(u(3)).items_center().child(icon(u, "start", 16)).child(label("Start", { bold: true })),
+      h_flex().gap(u(3)).items_center().child(icon(u, "start", 16)).child(label("开始", { bold: true })),
       null,
       {
         toggled: startOpen,
@@ -478,11 +478,11 @@ export default class Taskbar {
     ).flex_none();
 
     const ql = [
-      this.quick(u, "dos", "dos", "DOS Prompt", { run: ["tab.new", { name: "DOS Prompt" }] }),
+      this.quick(u, "dos", "dos", "DOS 提示符", { run: ["tab.new", { name: "DOS 提示符" }] }),
       ...AGENTS.filter((a) => this.installed.includes(a[0]))
         .slice(0, 2)
         .map(([cmd, name, ico]) => this.quick(u, cmd, programIcon(u, { icon: ico, tint: false }, 16), name, { run: ["tab.new", { name, argv: [cmd] }] })),
-      this.quick(u, "mines", "mines", "Mines", { app: "mines" }),
+      this.quick(u, "mines", "mines", "扫雷", { app: "mines" }),
     ];
 
     return root(
@@ -518,24 +518,26 @@ export default class Taskbar {
 
 export function closeTabAsk(s, tab) {
   return {
-    title: "Close Tab",
+    title: "关闭标签页",
     icon: "warning",
-    text: `Are you sure you want to close '${tab.name}'?\nIts programs will be ended.`,
+    text: `确定关闭「${tab.name}」？
+其中运行的程序将结束。`,
     buttons: [
-      { label: "&Yes", default: true, act: { run: ["tab.close", { id: tab.id }] } },
-      { label: "&No" },
+      { label: "是(&Y)", default: true, act: { run: ["tab.close", { id: tab.id }] } },
+      { label: "否(&N)" },
     ],
   };
 }
 
 export function closeSpaceAsk(s) {
   return {
-    title: "Confirm Folder Delete",
+    title: "确认删除文件夹",
     icon: "warning",
-    text: `Are you sure you want to close the space '${s.name}' and all its tabs?\nEvery program in it will be ended.`,
+    text: `确定关闭工作区「${s.name}」及其全部标签页？
+其中运行的程序将结束。`,
     buttons: [
-      { label: "&Yes", default: true, act: { run: ["space.close", { id: s.id, confirmed: true }] } },
-      { label: "&No" },
+      { label: "是(&Y)", default: true, act: { run: ["space.close", { id: s.id, confirmed: true }] } },
+      { label: "否(&N)" },
     ],
   };
 }

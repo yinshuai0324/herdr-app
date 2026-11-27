@@ -312,7 +312,7 @@ impl MacPlatform {
                 menu_item.setSubmenu_(menu);
                 application_menu.addItem_(menu_item);
 
-                if menu_config.name == "Window" {
+                if menu_config.name == "Window" || menu_config.name == "窗口" {
                     let app: id = msg_send![APP_CLASS, sharedApplication];
                     app.setWindowsMenu_(menu);
                 }

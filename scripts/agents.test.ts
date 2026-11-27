@@ -139,7 +139,7 @@ test("a failed agent check keeps cached launchable agents and shows an error ins
     menu.init({}, { focus_handle: () => ({ focus() {} }), spawn: (run: (cx: unknown) => Promise<void>) => { task = run({ notify() {} }); } });
     await task!;
     const text = textOf(menu.render().node);
-    expect(text).toContain("Could not check installed agents");
+    expect(text).toContain("无法检查已安装的代理。");
     expect(text).not.toContain("not installed");
     expect(text).not.toContain("Codex");
     if (agents.length) expect(text).toContain("Claude Code");

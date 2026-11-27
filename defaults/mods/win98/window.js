@@ -11,7 +11,7 @@ export function paneTitle(p) {
   if (!p) return "";
   if (p.mod) return p.title || p.mod;
   const prog = p.program;
-  if (!prog || prog.shell) return `DOS Prompt - ${dosPath(p.cwd, home())}`;
+  if (!prog || prog.shell) return `DOS 提示符 - ${dosPath(p.cwd, home())}`;
   const t = (p.title ?? "").trim();
   return t && t !== prog.name ? `${prog.name} - ${t}` : `${prog.name} - ${dosPath(p.cwd, home())}`;
 }
@@ -27,14 +27,14 @@ export default class PaneWindow {
     const zoomed = Boolean(p?.zoomed);
     const menu = () =>
       openMenu([
-        { label: "&Restore", act: { run: ["pane.zoom", { pane: id }] }, disabled: !zoomed },
-        { label: "Mi&nimize", act: { run: ["tab.settle", { id: p?.tab }] } },
-        { label: "Ma&ximize", act: { run: ["pane.zoom", { pane: id }] }, disabled: zoomed },
+        { label: "还原(&R)", act: { run: ["pane.zoom", { pane: id }] }, disabled: !zoomed },
+        { label: "最小化(&N)", act: { run: ["tab.settle", { id: p?.tab }] } },
+        { label: "最大化(&X)", act: { run: ["pane.zoom", { pane: id }] }, disabled: zoomed },
         { sep: true },
-        { label: "Split &Right", shortcut: "Ctrl+Shift+O", act: { run: ["pane.split", { direction: "right", pane: id }] } },
-        { label: "Split &Down", shortcut: "Ctrl+Shift+E", act: { run: ["pane.split", { direction: "down", pane: id }] } },
+        { label: "向右分屏(&R)", shortcut: "Ctrl+Shift+O", act: { run: ["pane.split", { direction: "right", pane: id }] } },
+        { label: "向下分屏(&D)", shortcut: "Ctrl+Shift+E", act: { run: ["pane.split", { direction: "down", pane: id }] } },
         { sep: true },
-        { label: "&Close", bold: true, shortcut: "Alt+F4", act: { run: ["pane.close", { pane: id }] } },
+        { label: "关闭(&C)", bold: true, shortcut: "Alt+F4", act: { run: ["pane.close", { pane: id }] } },
       ]);
     const bar = titleBar(u, {
       id: `pw-${id}`,
@@ -43,9 +43,9 @@ export default class PaneWindow {
       active,
       icon: p?.mod ? icon(u, "programs", 16) : programIcon(u, p?.program, 16),
       controls: [
-        ["min", () => run("tab.settle", { id: p?.tab }), "Minimize"],
-        [zoomed ? "restore" : "max", () => run("pane.zoom", { pane: id }), zoomed ? "Restore" : "Maximize"],
-        ["close", () => run("pane.close", { pane: id }), "Close"],
+        ["min", () => run("tab.settle", { id: p?.tab }), "最小化"],
+        [zoomed ? "restore" : "max", () => run("pane.zoom", { pane: id }), zoomed ? "还原" : "最大化"],
+        ["close", () => run("pane.close", { pane: id }), "关闭"],
       ],
       onClick: () => run("pane.focus", { pane: id }),
       onDouble: () => run("pane.zoom", { pane: id }),

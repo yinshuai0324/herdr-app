@@ -141,7 +141,7 @@ fn launch_failure(record: &Value, output: &str) -> Option<String> {
     }
     let lines = output.lines().filter(|l| !l.trim().is_empty()).collect::<Vec<_>>();
     let tail = lines[lines.len().saturating_sub(5)..].join("\n");
-    Some(if tail.is_empty() { format!("Exit code {code}") } else { format!("Exit code {code}\n{tail}") })
+    Some(if tail.is_empty() { format!("退出代码 {code}") } else { format!("退出代码 {code}\n{tail}") })
 }
 
 /// The shipped layouts (defaults/layouts): `main` is Herdr's window (spaces
@@ -658,7 +658,7 @@ impl AppWindow {
         w.apply_look(window, cx);
         w.show_layout_notes(window, cx);
         if let (Some(n), false) = (&name, gone.is_empty()) {
-            let note = json!({ "title": format!("{n} needs mods that aren't here"), "body": format!("Showing Herdr instead. Missing: {}. Your {n} layout file is still there.", gone.join(", ")), "level": "info", "timeout": 12000 });
+            let note = json!({ "title": format!("{n} 缺少所需扩展"), "body": format!("已切换到 Herdr 布局。缺少扩展：{}。{n} 的布局文件已保留。", gone.join(", ")), "level": "info", "timeout": 12000 });
             w.open_overlay(mods::new_overlay_id(), json!({ "kind": "toast", "notification": note }), window, cx);
         }
 
@@ -1226,7 +1226,7 @@ impl AppWindow {
     /// What installing layouts kept of the person's own, as toasts.
     fn show_layout_notes(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         for clone in mods::take_sync_notes() {
-            let n = json!({ "title": format!("Your edits are in {clone}"), "body": "Herdr's own layouts and mods can't be changed: clone one to make it yours.", "level": "info", "timeout": 12000 });
+            let n = json!({ "title": format!("已将你的修改保存在 {clone}"), "body": "复制内置布局或扩展后，即可修改自己的副本。", "level": "info", "timeout": 12000 });
             self.open_overlay(mods::new_overlay_id(), json!({ "kind": "toast", "notification": n }), window, cx);
         }
     }
@@ -2177,7 +2177,7 @@ impl AppWindow {
                     if notify {
                         tracing::warn!("layout on {machine:?} unavailable: {error}");
                         slot.notified_error = Some(error.clone());
-                        self.layout_notice("Layout unavailable", &format!("{}: {error}", if machine.is_empty() { "This machine" } else { &machine }), window, cx);
+                        self.layout_notice("无法加载布局", &format!("{}: {error}", if machine.is_empty() { "本机" } else { &machine }), window, cx);
                     }
                     continue;
                 }
@@ -2194,7 +2194,7 @@ impl AppWindow {
                 changed = true;
             }
             if conflict {
-                self.layout_notice("Layout changed elsewhere", "The other screen's layout is shown.", window, cx);
+                self.layout_notice("布局已在其他窗口更改", "已显示另一窗口的布局。", window, cx);
             }
         }
         if let Some(machines) = machines {
@@ -2278,7 +2278,7 @@ impl AppWindow {
                     Ok(true) => {}
                     Err((name, error)) => {
                         tracing::warn!(mod_name = %name, "link.js: {error}");
-                        this.error_notice(&format!("Link handler {name} failed"), &error, window, cx);
+                        this.error_notice(&format!("链接处理器 {name} 执行失败"), &error, window, cx);
                         this.link_errors.insert(name, error);
                     }
                 }
@@ -2395,7 +2395,7 @@ impl AppWindow {
         let name = rec
             .and_then(|r| r.get("name").and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_owned))
             .or_else(|| app.as_deref().map(crate::programs::name))
-            .unwrap_or_else(|| "An agent".into());
+            .unwrap_or_else(|| "代理".into());
         // A sub-agent lives where its top agent does.
         let home = self.root_agent(addr);
         let place = self.model.pane_of(&home).and_then(|pane| {
@@ -2403,8 +2403,8 @@ impl AppWindow {
             Some(format!("{} / {}", self.model.space_name(p, &self::home()), Model::tab_name(p, c)))
         });
         let (title, level) = match alert {
-            model::Alert::Blocked => (format!("{name} needs you"), "error"),
-            model::Alert::Done => (format!("{name} finished"), "info"),
+            model::Alert::Blocked => (format!("{name} 需要你处理"), "error"),
+            model::Alert::Done => (format!("{name} 已完成"), "info"),
         };
         let notification = json!({
             "title": title, "body": place, "level": level,
@@ -2628,7 +2628,7 @@ impl AppWindow {
             }).await;
             if let Some(body) = failure {
                 let _ = this.update_in(cx, |this, window, cx| {
-                    this.open_overlay(mods::new_overlay_id(), json!({"kind":"toast", "notification":{"title":"Terminal failed to start", "body":body, "level":"error"}}), window, cx);
+                    this.open_overlay(mods::new_overlay_id(), json!({"kind":"toast", "notification":{"title":"终端启动失败", "body":body, "level":"error"}}), window, cx);
                 });
             }
         }).detach();
@@ -2648,10 +2648,10 @@ impl AppWindow {
     fn require_document(&self, machine: Option<&str>) -> Result<(), String> {
         match self.documents.get(machine.unwrap_or("")) {
             Some(slot) if slot.available => Ok(()),
-            Some(slot) => Err(slot.error.clone().unwrap_or_else(|| "This machine's layout is unavailable. Try again when it reconnects.".into())),
+            Some(slot) => Err(slot.error.clone().unwrap_or_else(|| "无法加载此主机的布局，重新连接后请重试。".into())),
             None => Err(match machine {
-                Some(m) => format!("Herdr has no machine called {m}. See hc machine ls; machines added with --temp stay out of Herdr."),
-                None => "This machine's layout is unavailable. Try again when it reconnects.".into(),
+                Some(m) => format!("找不到主机 {m}。请用 hc machine ls 查看。通过 --temp 添加的主机不会显示在 Herdr 中。"),
+                None => "无法加载此主机的布局，重新连接后请重试。".into(),
             }),
         }
     }
@@ -2866,7 +2866,7 @@ impl AppWindow {
             return Ok(json!({ "pane": p }));
         }
         if !self.live.contains_key(addr) { return Err(format!("no running terminal {addr:?}")); }
-        if self.changing_terminals.contains(addr) { return Err("This terminal already has a pane change in progress.".into()); }
+        if self.changing_terminals.contains(addr) { return Err("正在调整这个终端的窗格，请稍后再试。".into()); }
         let space = self.model.active_space().map(|p| p.id.clone()).ok_or("no space to keep it in")?;
         let machine = self.machine_of(&space);
         if addr.split_once('/').map(|(m, _)| m) != machine.as_deref() {
@@ -2890,7 +2890,7 @@ impl AppWindow {
     /// Parking changes labels/keep in the background; only a successful reply removes the pane.
     fn park_terminal(&mut self, addr: &str, window: &mut Window, cx: &mut Context<Self>) -> Result<Value, String> {
         self.require_document(addr.split_once('/').map(|(m, _)| m))?;
-        if self.changing_terminals.contains(addr) { return Err("This terminal already has a pane change in progress.".into()); }
+        if self.changing_terminals.contains(addr) { return Err("正在调整这个终端的窗格，请稍后再试。".into()); }
         self.start_terminal_change(addr.to_owned(), TerminalChange::Park, window, cx);
         Ok(json!({"pending":true,"terminal":addr}))
     }
@@ -2932,7 +2932,7 @@ impl AppWindow {
         self.changing_terminals.remove(&address);
         if let Err(error) = result {
             tracing::error!("terminal change for {address} failed: {error}");
-            if !self.draining { self.layout_notice("Could not change terminal pane", &error, window, cx); }
+            if !self.draining { self.layout_notice("无法调整终端窗格", &error, window, cx); }
             return;
         }
         match change {
@@ -3158,19 +3158,19 @@ impl AppWindow {
                 let id = Self::owned(&args, "id").or_else(|| self.model.active.clone());
                 let current = id.as_deref().and_then(|i| self.model.space(i)).map(|p| p.name.clone());
                 args["id"] = json!(id);
-                ("rename space", "empty: named after its folder", current)
+                ("重命名工作区", "留空时使用文件夹名称", current)
             }
             "pane.rename" => {
                 let id = Self::owned(&args, "pane").or_else(|| self.model.focused_pane());
                 let current = id.as_deref().and_then(|i| self.model.tab_of(i)?.root.find(i)?.title.clone());
                 args["pane"] = json!(id);
-                ("rename pane", "empty: unnamed", current)
+                ("重命名窗格", "留空时不命名", current)
             }
             _ => {
                 let id = Self::owned(&args, "id").or_else(|| self.model.active_tab().map(|c| c.id.clone()));
                 let current = id.as_deref().and_then(|i| self.model.tab(i)).map(|c| c.name.clone());
                 args["id"] = json!(id);
-                ("rename tab", "empty: its number", current)
+                ("重命名标签页", "留空时使用标签页编号", current)
             }
         };
         // Once: a second rename press closes the open prompt instead of stacking another.
@@ -3201,8 +3201,8 @@ impl AppWindow {
                         return self.fail("space.close ends its terminals: pass confirmed: true");
                     }
                     let panes: usize = p.tabs.iter().map(|c| c.root.panes().len()).sum();
-                    let detail = format!("{} \u{2014} {} tabs, {} terminals", self.model.space_name(p, &home()), p.tabs.len(), panes);
-                    self.confirm("Close space?", &detail, "space.close", json!({ "id": id, "confirmed": true }), window, cx);
+                    let detail = format!("{} · {} 个标签页，{} 个终端", self.model.space_name(p, &home()), p.tabs.len(), panes);
+                    self.confirm("关闭工作区？", &detail, "space.close", json!({ "id": id, "confirmed": true }), window, cx);
                     return;
                 }
                 let addrs = self.model.remove_space(&id);
@@ -4736,7 +4736,7 @@ impl AppWindow {
                         .items_center()
                         .justify_center()
                         .text_color(c("dim"))
-                        .child(format!("No space open. Make one{}.", key.unwrap_or_default()))
+                        .child(format!("尚未打开工作区。新建一个{}。", key.unwrap_or_default()))
                         .into_any_element()
                 }
             },
@@ -4785,7 +4785,7 @@ impl AppWindow {
                 .text_xs()
                 .text_color(c("blocked"))
                 .overflow_y_scroll()
-                .child(format!("{} did not load:\n\n{}\n\nFix the files; Herdr retries on save.", inst.name, error.as_deref().unwrap_or("?")))
+                .child(format!("{} 加载失败：\n\n{}\n\n修改文件后，Herdr 会在保存时重试。", inst.name, error.as_deref().unwrap_or("?")))
                 .into_any_element(),
             None => div().into_any_element(),
         }
@@ -5160,9 +5160,9 @@ impl AppWindow {
         let core = crate::update::core();
         let core = core.ready.filter(|_| !core.updating && core.managed.is_none());
         match (crate::update::ready(), core) {
-            (Some(a), Some(c)) => Some(format!("Herdr {a} and herdr-core {c} are ready")),
-            (Some(a), None) => Some(format!("Herdr {a} is ready")),
-            (None, Some(c)) => Some(format!("herdr-core {c} is ready")),
+            (Some(a), Some(c)) => Some(format!("Herdr {a} 和 herdr-core {c} 已就绪")),
+            (Some(a), None) => Some(format!("Herdr {a} 已就绪")),
+            (None, Some(c)) => Some(format!("herdr-core {c} 已就绪")),
             (None, None) => None,
         }
     }
@@ -5171,7 +5171,7 @@ impl AppWindow {
         let app_version = crate::update::ready();
         let app_ready = app_version.is_some();
         let success = self.update_ready.is_none() && self.update_success;
-        let label = self.update_ready.clone().or_else(|| success.then(|| format!("Updated to {}", env!("CARGO_PKG_VERSION"))))?;
+        let label = self.update_ready.clone().or_else(|| success.then(|| format!("已更新到 {}", env!("CARGO_PKG_VERSION"))))?;
         let dismissal = app_version.map(|v| format!("app:{v}")).unwrap_or_else(|| label.clone());
         if self.update_dismissed.as_ref() == Some(&dismissal) { return None; }
         let pill = div()
@@ -5203,11 +5203,11 @@ impl AppWindow {
                     .text_color(c("accent_foreground"))
                     .font_weight(FontWeight::SEMIBOLD)
                     .hover(|s| s.opacity(0.9))
-                    .child("Restart")
+                    .child("重启")
                     .on_click(cx.listener(|this, _, w, cx| this.run("app.update", json!({}), w, cx))),
             ))
             .child(div().id("update-notes").px(settings::z(6.0)).cursor_pointer().text_color(c("accent"))
-                .child(if app_ready || success { "What changed" } else { "Open Updates" })
+                .child(if app_ready || success { "查看更新内容" } else { "打开更新设置" })
                 .on_click(cx.listener(move |this, _, w, cx| {
                     if success { this.update_success = false; }
                     this.run("app.settings", json!({ "section": "updates" }), w, cx);
@@ -5723,7 +5723,7 @@ impl Render for AppWindow {
                         }
                         this.run_key(&name, args, w, cx);
                     }
-                    Err(error) => this.command_error("Key binding", &error, w, cx),
+                    Err(error) => this.command_error("快捷键", &error, w, cx),
                 }
             }))
             // Ctrl (Cmd) alone shows links in the pane under the pointer, focused or not.
@@ -6322,8 +6322,8 @@ mod tests {
     #[test]
     fn early_launch_failures_show_exit_code_and_last_output_lines() {
         let mut record = serde_json::json!({"reason":"exited", "exit_code":127, "created_ms":1000, "finished_ms":3000});
-        assert_eq!(super::launch_failure(&record, "old\none\ntwo\nthree\nfour\nfive\n\n").as_deref(), Some("Exit code 127\none\ntwo\nthree\nfour\nfive"));
-        assert_eq!(super::launch_failure(&record, "").as_deref(), Some("Exit code 127"));
+        assert_eq!(super::launch_failure(&record, "old\none\ntwo\nthree\nfour\nfive\n\n").as_deref(), Some("退出代码 127\none\ntwo\nthree\nfour\nfive"));
+        assert_eq!(super::launch_failure(&record, "").as_deref(), Some("退出代码 127"));
         record["exit_code"] = 0.into();
         assert!(super::launch_failure(&record, "").is_none());
         record["exit_code"] = 1.into();

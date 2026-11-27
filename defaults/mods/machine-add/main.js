@@ -129,7 +129,7 @@ export default class MachineAdd extends View {
       try {
         why = r.code === 0 ? null : (JSON.parse(r.stdout || r.stderr).error ?? { message: (r.stderr || r.stdout).trim() });
       } catch {
-        why = { message: (r.stderr || r.stdout || "it didn't answer").trim() };
+        why = { message: (r.stderr || r.stdout || "主机没有响应").trim() };
       }
       if (!why) {
         delete this.state[target];
@@ -140,8 +140,8 @@ export default class MachineAdd extends View {
       } else if (["hc_missing", "incompatible", "login_needed", "auth_failed", "host_key"].includes(why.kind) || /password|passphrase|host key|permission denied|login/i.test(why.message ?? "")) {
         const quoted = shellArg(target);
         this.pending.add(target);
-        this.state[target] = `Couldn't add ${target} here: it needs you to answer something (a password, a new host key, or installing herdr-core there). Run \`hc machine add ${quoted}\` in a terminal. \`hc machine --help\` shows the options.`;
-      } else this.state[target] = why.message || "it didn't work";
+        this.state[target] = `无法添加 ${target}：需要你确认密码、主机公钥或安装 herdr-core。请在终端运行 \`hc machine add ${quoted}\`。运行 \`hc machine --help\` 可查看选项。`;
+      } else this.state[target] = why.message || "操作失败";
       await this.refresh();
       cx.notify();
     });
@@ -162,16 +162,16 @@ export default class MachineAdd extends View {
     const command = `sudo loginctl enable-linger -- ${shellArg(m.logout_linger_user ?? "<user>")}`;
     return v_flex().id(`ma-logout-${m.name}`).mx(10).mb(8).p(12).gap(8).rounded(10)
       .bg(t.blocked + "14").border_1().border_color(t.blocked + "40")
-      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`Agents on ${m.name} stop when you disconnect`))
+      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`主机 ${m.name} 上的代理会在断开连接时停止`))
       .child(div().text_size(12.5).line_height("18px").text_color(t.muted)
-        .child("The server ends your programs when your last login closes, for example when your laptop sleeps."))
-      .child(div().text_size(12.5).text_color(t.muted).child(`Run this on ${m.name} once:`))
+        .child("结束最后一个登录会话时，服务器会停止你的程序。例如，你的笔记本电脑休眠时可能发生这种情况。"))
+      .child(div().text_size(12.5).text_color(t.muted).child(`请在以下主机运行：${m.name} once:`))
       .child(h_flex().gap(8).items_center()
         .child(div().flex_1().min_w(0).text_size(12).text_color(t.foreground).child(command))
         .child(div().id(`ma-logout-copy-${m.name}`).px(10).py(4).rounded(6).bg(t.raised).text_color(t.foreground)
           .text_size(12).cursor_pointer().hover(s => s.bg(t.hover))
           .on_click((_e, cx) => { cx.write_to_clipboard(command); this.copiedCommand = command; cx.notify(); })
-          .child(this.copiedCommand === command ? "Copied" : "Copy")));
+          .child(this.copiedCommand === command ? "已复制" : "复制")));
   }
 
   macCard(t, target) {
@@ -185,13 +185,13 @@ export default class MachineAdd extends View {
       .bg(t.blocked + "14")
       .border_1()
       .border_color(t.blocked + "40")
-      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`${mac.name} is a Mac: allow its folders once`))
+      .child(div().text_size(12.8).font_semibold().text_color(t.foreground).child(`${mac.name} 是 Mac，需要授权读取受保护的文件夹`))
       .child(
         div()
           .text_size(12.5)
           .line_height("18px")
           .text_color(t.muted)
-          .child("macOS asks on the Mac's own screen before an agent reads Desktop, Documents or Downloads, and waits until someone answers. Give herdr-core Full Disk Access there and it never asks again: in the list, press + and pick this file:"),
+          .child("代理读取「桌面」「文稿」或「下载」前，远端 Mac 会弹出授权提示并等待确认。也可在远端的「完全磁盘访问权限」中点 ＋，选择下面这个 herdr-core 文件："),
       )
       .child(div().px(8).py(4).rounded(6).bg(t.background).border_1().border_color(t.border).text_size(12).text_color(t.foreground).child(mac.core))
       .child(
@@ -217,9 +217,9 @@ export default class MachineAdd extends View {
                 this.opened[target] = true;
                 cx.notify();
               })
-              .child(`Open the setting on ${mac.name}`),
+              .child(`打开此主机的设置：${mac.name}`),
           )
-          .when(Boolean(this.opened[target]), (el) => el.child(div().text_size(12).text_color(t.dim).child("It's open on the Mac's screen."))),
+          .when(Boolean(this.opened[target]), (el) => el.child(div().text_size(12).text_color(t.dim).child("已在远端 Mac 上打开设置。"))),
       );
   }
 
@@ -240,7 +240,7 @@ export default class MachineAdd extends View {
         .id(`ma-copy-${target}`).px(10).py(4).rounded(6).bg(t.raised).text_color(t.foreground)
         .text_size(12).cursor_pointer().hover(s => s.bg(t.hover))
         .on_click((_e, cx) => { cx.write_to_clipboard(command); this.copiedCommand = command; cx.notify(); })
-        .child(this.copiedCommand === command ? "Copied" : "Copy"))));
+        .child(this.copiedCommand === command ? "已复制" : "复制"))));
   }
 
   row(t, target, label, sub) {
@@ -248,9 +248,9 @@ export default class MachineAdd extends View {
     const done = this.isAdded(target);
     const machine = this.added.find(m => m.target === target || m.name === target || m.host === target);
     const right = done
-      ? h_flex().gap(5).items_center().text_size(12).text_color(t.ansi2).child(svg(I("circle-check")).size(13)).child("Added")
+      ? h_flex().gap(5).items_center().text_size(12).text_color(t.ansi2).child(svg(I("circle-check")).size(13)).child("已添加")
       : st === "adding"
-        ? h_flex().gap(6).items_center().text_size(12).text_color(t.muted).child(svg(I("spinner")).size(12).text_color(t.working).spin(900)).child("Connecting")
+        ? h_flex().gap(6).items_center().text_size(12).text_color(t.muted).child(svg(I("spinner")).size(12).text_color(t.working).spin(900)).child("连接中")
         : div()
               .id(`ma-add-${target}`)
               .px(10)
@@ -266,7 +266,7 @@ export default class MachineAdd extends View {
               .cursor_pointer()
               .hover((s) => s.bg(t.hover))
               .on_click((_e, cx) => this.add(target, cx))
-              .child("Add");
+              .child("添加");
     const idle = !done && !st;
     return v_flex()
       .flex_none()
@@ -302,16 +302,16 @@ export default class MachineAdd extends View {
       .p(18)
       .bg(t.popover)
       .text_color(t.foreground)
-      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("Add a machine")).child(div().id("ma-esc").px(6).py(2).rounded(5).text_size(11).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click(() => this.close()).child("Esc")))
+      .child(h_flex().items_center().child(div().flex_1().text_size(15).font_semibold().child("添加主机")).child(div().id("ma-esc").px(6).py(2).rounded(5).text_size(11).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground)).on_click(() => this.close()).child("Esc")))
       .child(
         div()
           .pt(6)
           .text_size(12.8)
           .line_height("19px")
           .text_color(t.muted)
-          .child("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."),
+          .child("Herdr 通过 SSH 连接服务器、Mac mini 或家里的电脑。你的电脑休眠时，远端代理仍可运行。"),
       )
-      .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "From your ssh config" : "Your ssh config lists no hosts"))
+      .child(div().pt(16).pb(6).text_size(11.5).font_medium().text_color(t.dim).child(hosts.length ? "从 SSH 配置选择" : "SSH 配置中没有主机"))
       .child(
         v_flex()
           .id("ma-hosts")
@@ -321,13 +321,13 @@ export default class MachineAdd extends View {
           .overflow_y_scroll()
           .children(
             this.hosts === null
-              ? [div().px(10).py(8).text_size(12.5).text_color(t.dim).child("Reading ~/.ssh/config…")]
+              ? [div().px(10).py(8).text_size(12.5).text_color(t.dim).child("正在读取 ~/.ssh/config…")]
               : hosts.filter(h => !this.isAdded(h.alias)).map((h) => this.row(t, h.alias, h.alias, [h.user, h.hostname].filter(Boolean).join("@") || (h.aliases.length ? `also ${h.aliases.join(", ")}` : ""))),
           ),
       )
       .when(this.added.length > 0, el => el.child(v_flex().id("ma-added").max_h(280).min_h(0).overflow_y_scroll()
         .children(this.added.map(m => this.row(t, m.target, m.name, m.target)))))
-      .child(div().pt(14).pb(6).text_size(11.5).font_medium().text_color(t.dim).child("Or type how ssh reaches it"))
+      .child(div().pt(14).pb(6).text_size(11.5).font_medium().text_color(t.dim).child("也可以手动输入 SSH 地址"))
       .child(
         h_flex()
           .gap(8)
@@ -360,7 +360,7 @@ export default class MachineAdd extends View {
               .when(!this.typed.trim(), (el) => el.opacity(0.4))
               .cursor_pointer()
               .on_click((_e, cx) => this.add(this.typed, cx))
-              .child("Add"),
+              .child("添加"),
           ),
       )
       .when(Boolean(this.typed.trim() && this.state[this.typed.trim()]), (el) => el.child(div().pt(6).child(this.message(t, this.typed.trim()))));

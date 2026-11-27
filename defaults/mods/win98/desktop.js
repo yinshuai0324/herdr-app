@@ -75,37 +75,39 @@ export default class Desktop {
     const all = spaces();
     const badgeOf = (s) => (s.status === "blocked" ? "warn-badge" : s.status === "working" ? "hourglass" : s.status === "done" ? "check-badge" : null);
     const items = [
-      this.item(u, "computer", "computer", "My Computer", { open: () => openDialog("mycomputer", {}) }),
-      this.item(u, "bin", "bin", "Recycle Bin", { open: () => openDialog("bin", {}) }),
+      this.item(u, "computer", "computer", "我的电脑", { open: () => openDialog("mycomputer", {}) }),
+      this.item(u, "bin", "bin", "回收站", { open: () => openDialog("bin", {}) }),
       ...all.map((s) =>
         this.item(u, s.id, s.machine ? "netfolder" : s.active ? "folder-open" : "folder", s.name, {
           selected: s.active,
           badge: badgeOf(s),
           open: () => run("space.select", { id: s.id }),
           menu: () => [
-            { label: "&Open", bold: true, act: { run: ["space.select", { id: s.id }] } },
-            { label: "New &Tab...", act: { dialog: { kind: "prompt", title: "New Tab", text: `Type a name for the new tab in '${s.name}':`, icon: "dos", command: { name: "tab.new", args: { space: s.id } } } } },
+            { label: "打开(&O)", bold: true, act: { run: ["space.select", { id: s.id }] } },
+            { label: "新建标签页(&T)…", act: { dialog: { kind: "prompt", title: "新建标签页", text: `为以下工作区的新标签页命名：${s.name}':`, icon: "dos", command: { name: "tab.new", args: { space: s.id } } } } },
             { sep: true },
-            { label: "Re&name", act: { dialog: { kind: "prompt", title: "Rename", text: "Type a new name for this space:", icon: "folder", value: s.name, command: { name: "space.rename", args: { id: s.id } } } } },
-            { label: "&Delete", act: { dialog: { kind: "confirm", ...closeSpaceAsk(s) } } },
+            { label: "重命名(&N)", act: { dialog: { kind: "prompt", title: "重命名", text: "输入工作区的新名称：", icon: "folder", value: s.name, command: { name: "space.rename", args: { id: s.id } } } } },
+            { label: "删除(&D)", act: { dialog: { kind: "confirm", ...closeSpaceAsk(s) } } },
             { sep: true },
             {
-              label: "P&roperties",
+              label: "属性(&R)",
               act: {
                 dialog: {
                   kind: "message",
                   title: `${s.name} Properties`,
                   icon: "folder",
-                  text: `Type:  Space\nLocation:  ${s.machine ?? "This computer"}\nFolder:  ${s.folder || "~"}\nBranch:  ${s.branch ?? "(none)"}\nContains:  ${s.tabs.length} tab(s)\nStatus:  ${s.status ?? "idle"}`,
+                  text: `类型：工作区
+位置：${s.machine ?? "本机"}\nFolder:  ${s.folder || "~"}\nBranch:  ${s.branch ?? "(none)"}\nContains:  ${s.tabs.length} 个标签页
+状态：${s.status ?? "idle"}`,
                 },
               },
             },
           ],
         }),
       ),
-      this.item(u, "mines", "mines", "Mines", { open: () => perform({ app: "mines" }) }),
-      this.item(u, "sol", "sol", "Solitaire", { open: () => perform({ app: "sol" }) }),
-      this.item(u, "net", "network", "Network Neighborhood", { open: () => openDialog("network", {}) }),
+      this.item(u, "mines", "mines", "扫雷", { open: () => perform({ app: "mines" }) }),
+      this.item(u, "sol", "sol", "纸牌", { open: () => perform({ app: "sol" }) }),
+      this.item(u, "net", "network", "网上邻居", { open: () => openDialog("network", {}) }),
     ];
     return root(
       u,
@@ -122,23 +124,23 @@ export default class Desktop {
         .on_mouse_down("right", () => {
           sfx("menu");
           openMenu([
-            { label: "Arrange &Icons", sub: [{ label: "by &Name", disabled: true }, { label: "by &Type", disabled: true }, { label: "&Auto Arrange", checked: true, disabled: true }] },
-            { label: "Line &up Icons", disabled: true },
+            { label: "排列图标(&I)", sub: [{ label: "按名称(&N)", disabled: true }, { label: "按类型(&T)", disabled: true }, { label: "自动排列(&A)", checked: true, disabled: true }] },
+            { label: "对齐图标(&U)", disabled: true },
             { sep: true },
-            { label: "&Refresh", act: { run: ["layout.switch", { name: "win98" }] } },
+            { label: "刷新(&R)", act: { run: ["layout.switch", { name: "win98" }] } },
             { sep: true },
-            { label: "&Paste", disabled: true },
-            { label: "Paste &Shortcut", disabled: true },
+            { label: "粘贴(&P)", disabled: true },
+            { label: "粘贴快捷方式(&S)", disabled: true },
             { sep: true },
             {
-              label: "Ne&w",
+              label: "新建(&W)",
               sub: [
-                { label: "&Space...", icon: "folder", act: { dialog: { kind: "prompt", title: "New Space", text: "Type a name for the new space:", icon: "folder", machines: true, command: { name: "space.new", args: {} } } } },
-                { label: "&Tab...", icon: "dos", act: { dialog: { kind: "prompt", title: "New Tab", text: "Type a name for the new tab:", icon: "dos", command: { name: "tab.new", args: {} } } } },
+                { label: "工作区(&S)…", icon: "folder", act: { dialog: { kind: "prompt", title: "新建工作区", text: "为新工作区命名：", icon: "folder", machines: true, command: { name: "space.new", args: {} } } } },
+                { label: "标签页(&T)…", icon: "dos", act: { dialog: { kind: "prompt", title: "新建标签页", text: "为新标签页命名：", icon: "dos", command: { name: "tab.new", args: {} } } } },
               ],
             },
             { sep: true },
-            { label: "P&roperties", act: { dialog: { kind: "display" } } },
+            { label: "属性(&R)", act: { dialog: { kind: "display" } } },
           ]);
         }),
     ).children(items);

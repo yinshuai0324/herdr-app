@@ -18,7 +18,7 @@ const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}\p{Ps}\p{Pi}]+/u, "").repla
 // title, as the agents list does; a name the person gave stays.
 function label(tab, lead) {
   const prog = lead?.program?.name;
-  const base = tab.named ? tab.name : prog ?? "Terminal";
+  const base = tab.named ? tab.name : prog ?? "终端";
   if (!lead?.program?.agent) return base;
   const live = clean(lead.title);
   // clean() would strip a path's leading ~ or /: test the title with only its status glyph gone.
@@ -148,8 +148,8 @@ export default class Tabs extends View {
         .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
         .children(shown.map(item)))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
-      .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
-      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
+      .when(enabled.includes("files"), el => el.child(panelButton("files", "文件", "mods/files/file.svg")))
+      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "更改", "mods/changes/changes.svg")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/tabs/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));

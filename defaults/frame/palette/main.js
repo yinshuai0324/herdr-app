@@ -20,47 +20,66 @@ const ROW_H = 32;
 const HEAD_H = 26;
 const LIST_H = SHOWN * ROW_H;
 const GROUPS = ["Recent", "Tab", "Pane", "Space", "Layout", "Terminal", "Agent", "Window", "Mod", "App"];
+const GROUP_NAMES = {
+  Recent: "最近使用", Tab: "标签页", Pane: "窗格", Space: "工作区",
+  Layout: "布局", Terminal: "终端", Agent: "代理", Window: "窗口", Mod: "扩展", App: "应用",
+};
+const DIRECTIONS = { left: "左", right: "右", up: "上", down: "下" };
+const EXTRA_TITLES = {
+  "pane.rename": "重命名窗格",
+  "terminal.select_all": "全选终端内容",
+  "terminal.select": "选择终端内容",
+  "terminal.clear_selection": "清除终端选区",
+  "terminal.scroll": "滚动终端",
+  "terminal.paste_image": "粘贴图片",
+  "terminal.search": "在终端中查找",
+  "app.feedback": "发送反馈",
+  "app.check_updates": "立即检查更新",
+  "app.update_core": "更新 herdr-core",
+  "app.update": "重启并更新",
+};
+
 
 // The palette's names for commands: [command, args, group, title, keywords].
 const NAMED = [
-  ["tab.new", {}, "Tab", "New tab", "tab agent new task"],
-  ["mod.open", { name: "picker" }, "Tab", "Go to space or tab…", "switch jump find"],
-  ["tab.rename", {}, "Tab", "Rename tab", "tab"],
-  ["tab.close", {}, "Tab", "Close tab", "tab kill"],
-  ["tab.next", {}, "Tab", "Next tab", "tab"],
-  ["tab.prev", {}, "Tab", "Previous tab", "tab"],
-  ["pane.split", { direction: "right" }, "Pane", "Split right", "vertical"],
-  ["pane.split", { direction: "down" }, "Pane", "Split down", "horizontal"],
-  ["pane.close", {}, "Pane", "Close pane", "kill"],
-  ["pane.zoom", {}, "Pane", "Zoom pane", "maximize fullscreen"],
-  ...["left", "right", "up", "down"].map((d) => ["pane.go", { direction: d }, "Pane", `Focus pane ${d}`, "move go"]),
-  ...["left", "right", "up", "down"].map((d) => ["pane.swap", { direction: d }, "Pane", `Swap pane ${d}`, "move"]),
-  ["space.new", {}, "Space", "New space", "workspace"],
-  ["space.rename", {}, "Space", "Rename space", "workspace"],
-  ["space.close", {}, "Space", "Close space", "workspace kill"],
-  ["space.next", {}, "Space", "Next space", "workspace"],
-  ["space.prev", {}, "Space", "Previous space", "workspace"],
-  ["layout.switch", {}, "Layout", "Next layout", "look switch"],
-  ["layout.reset", {}, "Layout", "Reset layout", "new version default restore herdr's"],
-  ["layout.clone", {}, "Layout", "Duplicate layout", "clone copy customize"],
-  ["mod.clone", {}, "Layout", "Duplicate mod", "clone copy customize"],
-  ["terminal.open", {}, "Terminal", "New terminal", "shell"],
-  ["terminal.copy", {}, "Terminal", "Copy", "clipboard"],
-  ["terminal.paste", {}, "Terminal", "Paste", "clipboard"],
-  ["agent.next", {}, "Agent", "Next agent", ""],
-  ["agent.prev", {}, "Agent", "Previous agent", ""],
-  ["window.minimize", {}, "Window", "Minimize window", ""],
-  ["window.maximize", {}, "Window", "Maximize window", "restore"],
-  ["window.close", {}, "Window", "Close window", "quit"],
-  ["app.settings", {}, "App", "Settings", "preferences options config look font theme sound"],
-  ["app.help", {}, "App", "Keys", "keybindings shortcuts help"],
-  ["app.welcome", {}, "App", "Welcome", "intro start onboarding"],
-  ["app.whats_new", {}, "App", "What's new", "release changes news update"],
-  ["app.reset", {}, "App", "Reset to the default screen", "escape hatch broken restore"],
-  ["app.zoom_in", {}, "App", "Zoom in", "bigger font size"],
-  ["app.zoom_out", {}, "App", "Zoom out", "smaller font size"],
-  ["app.zoom_reset", {}, "App", "Reset zoom", "font size"],
-  ["app.quit", {}, "App", "Quit Herdr", "exit"],
+  ["tab.new", {}, "Tab", "新建标签页", "tab agent new task New tab"],
+  ["mod.open", { name: "picker" }, "Tab", "跳转到工作区或标签页…", "switch jump find Go to space or tab…"],
+  ["tab.rename", {}, "Tab", "重命名标签页", "tab Rename tab"],
+  ["tab.close", {}, "Tab", "关闭标签页", "tab kill Close tab"],
+  ["tab.next", {}, "Tab", "下一个标签页", "tab Next tab"],
+  ["tab.prev", {}, "Tab", "上一个标签页", "tab Previous tab"],
+  ["pane.split", { direction: "right" }, "Pane", "向右分屏", "vertical Split right"],
+  ["pane.split", { direction: "down" }, "Pane", "向下分屏", "horizontal Split down"],
+  ["pane.close", {}, "Pane", "关闭窗格", "kill Close pane"],
+  ["pane.zoom", {}, "Pane", "放大或还原窗格", "maximize fullscreen Zoom pane"],
+  ...["left", "right", "up", "down"].map((d) => ["pane.go", { direction: d }, "Pane", `聚焦${DIRECTIONS[d]}侧窗格`, "move go"]),
+  ...["left", "right", "up", "down"].map((d) => ["pane.swap", { direction: d }, "Pane", `与${DIRECTIONS[d]}侧窗格互换`, "move"]),
+  ["space.new", {}, "Space", "新建工作区", "workspace New space"],
+  ["space.rename", {}, "Space", "重命名工作区", "workspace Rename space"],
+  ["space.close", {}, "Space", "关闭工作区", "workspace kill Close space"],
+  ["space.next", {}, "Space", "下一个工作区", "workspace Next space"],
+  ["space.prev", {}, "Space", "上一个工作区", "workspace Previous space"],
+  ["layout.switch", {}, "Layout", "切换到下一个布局", "look switch Next layout"],
+  ["layout.reset", {}, "Layout", "重置布局", "new version default restore herdr's Reset layout"],
+  ["layout.clone", {}, "Layout", "复制布局", "clone copy customize Duplicate layout"],
+  ["mod.clone", {}, "Layout", "复制扩展", "clone copy customize Duplicate mod"],
+  ["terminal.open", {}, "Terminal", "新建终端", "shell New terminal"],
+  ["terminal.copy", {}, "Terminal", "复制", "clipboard Copy"],
+  ["terminal.paste", {}, "Terminal", "粘贴", "clipboard Paste"],
+  ["agent.next", {}, "Agent", "下一个代理", "Next agent"],
+  ["agent.prev", {}, "Agent", "上一个代理", "Previous agent"],
+  ["window.minimize", {}, "Window", "最小化窗口", "Minimize window"],
+  ["window.maximize", {}, "Window", "最大化或还原窗口", "restore Maximize window"],
+  ["window.close", {}, "Window", "关闭窗口", "quit Close window"],
+  ["app.settings", {}, "App", "设置", "preferences options config look font theme sound Settings"],
+  ["app.help", {}, "App", "键盘快捷键", "keybindings shortcuts help Keys"],
+  ["app.welcome", {}, "App", "欢迎", "intro start onboarding Welcome"],
+  ["app.whats_new", {}, "App", "更新日志", "release changes news update What's new"],
+  ["app.reset", {}, "App", "恢复默认界面", "escape hatch broken restore Reset to the default screen"],
+  ["app.zoom_in", {}, "App", "放大", "bigger font size Zoom in"],
+  ["app.zoom_out", {}, "App", "缩小", "smaller font size Zoom out"],
+  ["app.zoom_reset", {}, "App", "重置缩放", "font size Reset zoom"],
+  ["app.quit", {}, "App", "退出 Herdr", "exit Quit Herdr"],
 ];
 
 // Commands that act on something you point at (ids, terminals): not for a list.
@@ -74,7 +93,7 @@ const HIDDEN = new Set([
 
 function titleOf(name) {
   const [noun, verb] = name.split(".");
-  return { group: noun.charAt(0).toUpperCase() + noun.slice(1), title: `${verb.replace(/_/g, " ")} ${noun}`.replace(/^./, (c) => c.toUpperCase()) };
+  return { group: noun.charAt(0).toUpperCase() + noun.slice(1), title: EXTRA_TITLES[name] ?? verb.replace(/_/g, " ") + " · " + noun };
 }
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -153,8 +172,8 @@ function entries(mods = []) {
     .map(([name, args, group, title, words]) => ({ name, args, group, title, words }));
   const shown = layouts();
   for (const l of shown) {
-    const t = { main: "Herdr", terminals: "Terminals", win98: "Herdr 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
-    list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `Layout: ${t}`, words: `look ${l}` });
+    const t = { main: "Herdr", terminals: "终端", win98: "Herdr 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
+    list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `布局：${t}`, words: `look ${l}` });
   }
   // `app.theme` sets the half of its theme's lightness, so only the themes
   // that can show now are offered: dark ones in a dark window, light ones in a
@@ -162,7 +181,7 @@ function entries(mods = []) {
   const dark = Boolean(settings().dark);
   for (const { name, light } of themes()) {
     if (Boolean(light) === dark || (name !== shared("layout") && shown.includes(name))) continue;
-    list.push({ name: "app.theme", args: { name }, group: "App", title: `Theme: ${name.replace(/-/g, " ")}`, words: "colors look" });
+    list.push({ name: "app.theme", args: { name }, group: "App", title: `主题：${name.replace(/-/g, " ")}`, words: "colors look" });
   }
   // Anything new in the app shows up too, until it gets a better name here.
   const named = new Set(NAMED.map(([n]) => n));
@@ -235,7 +254,7 @@ function fuzzy(q, text) {
 export default class Palette extends View {
   init(_props, cx) {
     this.query = "";
-    this.input = InputState.new({ placeholder: "Type a command…" });
+    this.input = InputState.new({ placeholder: "搜索命令…" });
     this.input.on("change", (_e, cx) => { this.query = this.input.value(); this.at = 0; cx.notify(); });
     this.input.on("submit", () => this.go(this.rows()[this.at]?.e));
     this.input.focus();
@@ -265,7 +284,7 @@ export default class Palette extends View {
     this.close();
     if (e.name === "mod.clone" && !e.args.name) {
       openOverlay({ mod: "prompt", kind: "dialog", width: 380, props: {
-        title: "Duplicate mod", hint: "Mod to copy; creates <name>-copy",
+        title: "复制扩展", hint: "输入要复制的扩展名，将创建 <name>-copy",
         command: { name: "mod.clone", args: {} },
       } });
     } else {
@@ -287,7 +306,7 @@ export default class Palette extends View {
     return all
       .map((e) => {
         const title = fuzzy(q, e.title);
-        const more = fuzzy(q, `${e.group} ${e.title} ${e.name} ${e.words}`);
+        const more = fuzzy(q, `${GROUP_NAMES[e.group] ?? e.group} ${e.group} ${e.title} ${e.name} ${e.words}`);
         const best = title ?? (more && { score: more.score - 4, hits: [] });
         return best && { e, score: best.score, hits: best.hits };
       })
@@ -352,7 +371,7 @@ export default class Palette extends View {
     const list = [];
     rows.forEach((r, i) => {
       const { head, title, row } = tops[i];
-      if (head && visible(title, row)) list.push(place(h_flex(), title, row).px(14).pb(4).items_end().text_size(11).font_semibold().text_color(t.dim).child(r.head));
+      if (head && visible(title, row)) list.push(place(h_flex(), title, row).px(14).pb(4).items_end().text_size(11).font_semibold().text_color(t.dim).child(GROUP_NAMES[r.head] ?? r.head));
       if (!visible(row, row + ROW_H)) return;
       const on = i === this.at;
       const k = keyOf(r.e, bound);
@@ -370,7 +389,7 @@ export default class Palette extends View {
           .hover((s) => s.bg(t.hover))
           .on_click(() => this.go(r.e))
           .child(div().flex_1().min_w(0).child(this.title(t, r.e.title, r.hits, on)))
-          .when(Boolean(this.query), (el) => el.child(div().text_size(11.5).text_color(t.dim).child(r.e.group)))
+          .when(Boolean(this.query), (el) => el.child(div().text_size(11.5).text_color(t.dim).child(GROUP_NAMES[r.e.group] ?? r.e.group)))
           .when(Boolean(k), (el) => el.child(key(k))),
       );
     });
@@ -426,7 +445,7 @@ export default class Palette extends View {
                 cx.notify();
               })
               .children(fixed ? list : [v_flex().children(list)])
-          : div().px(16).py(14).text_size(13).text_color(t.dim).child(`Nothing matches "${this.query}". Places are in the picker.`),
+          : div().px(16).py(14).text_size(13).text_color(t.dim).child(`没有与“${this.query}”匹配的命令。可通过工作区选择器跳转。`),
       );
   }
 }

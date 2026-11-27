@@ -11,6 +11,10 @@ HERDR_LAN_HOME="$HOME/Library/Application Support/Herdr LAN Workspace" \
   ./integrations/lan-workspace/launch-macos.zsh
 ```
 
+To try the Chinese desktop build, set `HERDR_LAN_BINARY` to the absolute
+path of `target/release/herdr-app` after `cargo build --release --locked`.
+The launcher uses it in a separate app bundle within the workbench profile.
+
 The local Mac needs Herdr, `hc`, Node.js 22 or later, npm, and the macOS Swift
 command-line tools. On first launch the launcher also builds the pinned SMB
 helper, using a checksum-verified Go toolchain. The toolchain and SMB library

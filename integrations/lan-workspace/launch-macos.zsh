@@ -80,13 +80,38 @@ fs.writeFileSync(path.join(profile, 'mods/lan-workspace/runtime.json'), JSON.str
 }), { mode: 0o600 })
 NODE
 if [[ "${1:-}" == '--prepare' ]]; then exit 0; fi
+if env HERDR_APP_HOME="$profile" "$installed_app/Contents/MacOS/Herdr" status >/dev/null 2>&1; then
+  print 'Herdr 局域网工作台已经打开。'
+  exit 0
+fi
 application="$profile/Herdr.app"
+if [[ -n "${HERDR_LAN_BINARY:-}" ]]; then
+  application="$profile/Herdr 中文.app"
+  if ! [[ -x "$HERDR_LAN_BINARY" ]]; then
+    print -u2 '找不到 Herdr 中文版构建。'
+    exit 1
+  fi
+fi
 if ! [[ -x "$application/Contents/MacOS/Herdr" ]]; then
   /usr/bin/ditto "$installed_app" "$application"
 fi
-if env HERDR_APP_HOME="$profile" "$application/Contents/MacOS/Herdr" status >/dev/null 2>&1; then
-  print 'Herdr 局域网工作台已经打开。'
-  exit 0
+if [[ -n "${HERDR_LAN_BINARY:-}" ]]; then
+  source_digest="$(/usr/bin/shasum -a 256 "$HERDR_LAN_BINARY" | cut -d' ' -f1)"
+  build_stamp="$application/Contents/Resources/lan-source.sha256"
+  if [[ "$(cat "$build_stamp" 2>/dev/null || true)" != "$source_digest" ]] ||
+    ! /usr/bin/codesign --verify "$application" 2>/dev/null; then
+    /usr/bin/install -m 755 "$HERDR_LAN_BINARY" "$application/Contents/MacOS/Herdr.new"
+    mv -f "$application/Contents/MacOS/Herdr.new" "$application/Contents/MacOS/Herdr"
+    plist="$application/Contents/Info.plist"
+    /usr/bin/plutil -replace CFBundleIdentifier -string dev.herdr.lan.zh "$plist"
+    /usr/bin/plutil -replace CFBundleDisplayName -string 'Herdr 中文' "$plist"
+    /usr/bin/plutil -replace CFBundleDevelopmentRegion -string zh_CN "$plist"
+    /usr/bin/plutil -replace NSMicrophoneUsageDescription -string 'Herdr 的终端程序可使用麦克风进行语音输入。' "$plist"
+    /usr/bin/plutil -replace NSCameraUsageDescription -string 'Herdr 的终端程序可使用摄像头。' "$plist"
+    /usr/bin/plutil -replace NSAppleEventsUsageDescription -string 'Herdr 的终端程序可通过 AppleScript 控制其他应用。' "$plist"
+    printf '%s\n' "$source_digest" > "$build_stamp"
+    /usr/bin/codesign --force --sign - "$application"
+  fi
 fi
 open_flags=(-n)
 if [[ "${1:-}" == '--background' ]]; then open_flags+=(-g -j); fi

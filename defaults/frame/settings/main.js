@@ -7,19 +7,19 @@ import { hc, run, theme, themes, fonts, updates, telemetry, settings, layouts, s
 const I = (name) => `frame/settings/${name}.svg`;
 
 const SECTIONS = [
-  { id: "look", title: "Look", icon: "palette" },
-  ...(window()?.platform === "macos" ? [{ id: "keyboard", title: "Keyboard", icon: "keyboard" }] : []),
-  { id: "machines", title: "Machines", icon: "server" },
-  { id: "alerts", title: "Alerts", icon: "bell" },
-  { id: "updates", title: "Updates", icon: "refresh" },
-  { id: "privacy", title: "Privacy", icon: "shield" },
+  { id: "look", title: "外观", icon: "palette" },
+  ...(window()?.platform === "macos" ? [{ id: "keyboard", title: "键盘", icon: "keyboard" }] : []),
+  { id: "machines", title: "主机", icon: "server" },
+  { id: "alerts", title: "提醒", icon: "bell" },
+  { id: "updates", title: "更新", icon: "refresh" },
+  { id: "privacy", title: "隐私", icon: "shield" },
 ];
 
-const LOOKS = { main: "Herdr", terminals: "Terminals", win98: "Herdr 98" };
+const LOOKS = { main: "Herdr", terminals: "终端", win98: "Herdr 98" };
 const APPEARANCES = [
-  [null, "System"],
-  ["light", "Light"],
-  ["dark", "Dark"],
+  [null, "跟随系统"],
+  ["light", "浅色"],
+  ["dark", "深色"],
 ];
 
 // What the app uses when settings.json names no font (settings.rs).
@@ -32,7 +32,7 @@ export default class Settings extends View {
     this.section = SECTIONS.some((s) => s.id === asked) ? asked : "look";
     this.picking = null; // "font" | "ui_font" while its list is open
     this.filter = "";
-    this.fontInput = InputState.new({ placeholder: "Type to search fonts" });
+    this.fontInput = InputState.new({ placeholder: "搜索字体" });
     this.fontInput.on("change", (_e, cx) => { this.filter = this.fontInput.value(); cx.notify(); });
     this.renameInput = InputState.new();
     this.renameInput.on("focus", (_e, cx) => { this.renameFocused = true; cx.notify(); });
@@ -130,11 +130,11 @@ export default class Settings extends View {
       let next;
       try {
         await this.load();
-        if (this.broken) return { title: "settings.json has errors: fix it first" };
+        if (this.broken) return { title: "settings.json 有错误，请先修正。" };
         next = JSON.parse(JSON.stringify(this.person));
         edit(next);
       } catch (e) {
-        return { title: "Cannot read settings.json", body: String(e?.message ?? e) };
+        return { title: "无法读取 settings.json。", body: String(e?.message ?? e) };
       }
       try {
         await writeTextFile(this.file(), JSON.stringify(next, null, 2) + "\n", this.raw);
@@ -144,7 +144,7 @@ export default class Settings extends View {
         error = e;
       }
     }
-    return { title: "Not saved to settings.json", body: String(error?.message ?? error) };
+    return { title: "未能写入 settings.json。", body: String(error?.message ?? error) };
   }
 
   close() {
@@ -364,7 +364,7 @@ export default class Settings extends View {
           .filter((x) => Boolean(x.light) === light && (x.name === shared("layout") || !layouts().includes(x.name)))
           .map(({ name, colors: c }) => {
           const on = name === current;
-          const label = name.replace(/-/g, " ");
+          const label = ({ graphite: "石墨灰", ink: "墨色", moss: "苔绿", paper: "纸白", "atom-one-dark": "Atom One Dark" })[name] ?? name.replace(/-/g, " ");
           const dot = (color) => div().w(8).h(8).rounded(4).bg(color);
           return v_flex()
             .id(`st-t-${name}`)
@@ -484,7 +484,7 @@ export default class Settings extends View {
           .h(200)
           .p(4)
           .overflow_y_scrollbar()
-          .when(!q, (el) => el.child(item(`st-fd-${which}`, `Default (${def})`, def, (_e, cx) => choose(null, cx))))
+          .when(!q, (el) => el.child(item(`st-fd-${which}`, `默认（${def}）`, def, (_e, cx) => choose(null, cx))))
           .children(matches.map((f, i) => item(`st-fi-${which}-${i}`, f, f, (_e, cx) => choose(f, cx)))),
       );
   }
@@ -504,7 +504,7 @@ export default class Settings extends View {
           this.row(
             t,
             title,
-            own(which, family, def) ? "This layout sets its own; yours shows in the others." : null,
+            own(which, family, def) ? "此布局使用自己的样式，你的选择将在其他布局中生效。" : null,
             h_flex()
               .gap(8)
               .items_center()
@@ -515,66 +515,66 @@ export default class Settings extends View {
         );
     return v_flex()
       .w_full()
-      .child(this.heading(t, "Layout"))
+      .child(this.heading(t, "布局"))
       .child(this.layoutPicker(t, cx))
       .child(div().h(18))
-      .child(this.heading(t, "Theme"))
-      .child(this.row(t, "Appearance", "Light or dark, or as your system is now.", this.appearancePicker(t, cx)))
-      .child(div().pt(12).pb(8).text_size(12.5).text_color(t.dim).child("For the layout you're in: each layout keeps its own light and dark theme."))
-      .child(div().pb(6).text_size(12.5).font_medium().text_color(t.muted).child("Dark"))
+      .child(this.heading(t, "主题"))
+      .child(this.row(t, "外观", "选择浅色、深色或跟随系统。", this.appearancePicker(t, cx)))
+      .child(div().pt(12).pb(8).text_size(12.5).text_color(t.dim).child("每种布局可分别设置浅色和深色主题。"))
+      .child(div().pb(6).text_size(12.5).font_medium().text_color(t.muted).child("深色"))
       .child(this.themePicker(t, false))
-      .child(div().pt(10).pb(6).text_size(12.5).font_medium().text_color(t.muted).child("Light"))
+      .child(div().pt(10).pb(6).text_size(12.5).font_medium().text_color(t.muted).child("浅色"))
       .child(this.themePicker(t, true))
       .child(div().h(18))
-      .child(this.heading(t, "Size and fonts"))
+      .child(this.heading(t, "大小与字体"))
       .child(
         this.row(
           t,
-          "Zoom",
-          "Everything: terminals, panels, text.",
+          "界面缩放",
+          "同时调整终端、面板和文字大小。",
           h_flex()
             .gap(8)
             .items_center()
             .child(this.stepper(t, "st-zoom", `${Math.round(s.zoom * 100)}%`, () => run("app.zoom_out"), () => run("app.zoom_in")))
-            .child(this.button(t, "st-zoom-reset", "Reset", () => run("app.zoom_reset"))),
+            .child(this.button(t, "st-zoom-reset", "重置", () => run("app.zoom_reset"))),
         ),
       )
-      .child(fontRow("font", "font_size", "Terminal font", s.font_family, DEFAULT_FONT, s.font_size))
+      .child(fontRow("font", "font_size", "终端字体", s.font_family, DEFAULT_FONT, s.font_size))
       .child(
         this.row(
           t,
-          "Terminal font weight",
-          own("font_weight", s.font_weight, 500) ? "This layout sets its own; yours shows in the others." : `Bold text is ${s.font_weight_bold ?? 700} (font_weight_bold in settings.json).`,
+          "终端字体粗细",
+          own("font_weight", s.font_weight, 500) ? "此布局使用自己的样式，你的选择将在其他布局中生效。" : `粗体字重为 ${s.font_weight_bold ?? 700}（settings.json 中的 font_weight_bold）。`,
           this.stepper(t, "st-font_weight", `${s.font_weight}`, (_e, cx) => step("font_weight", s.font_weight, -100, 100, 900, cx), (_e, cx) => step("font_weight", s.font_weight, 100, 100, 900, cx)),
         ),
       )
       .children([
-        ["terminal_line_height", "Terminal line height", 0.8, 2, 0.1],
-        ["terminal_cell_width", "Terminal cell width", 0.8, 2, 0.05],
-        ["terminal_scroll_speed", "Terminal scroll speed", 0.1, 5, 0.1],
+        ["terminal_line_height", "终端行高", 0.8, 2, 0.1],
+        ["terminal_cell_width", "终端字符宽度", 0.8, 2, 0.05],
+        ["terminal_scroll_speed", "终端滚动速度", 0.1, 5, 0.1],
       ].map(([key, title, min, max, step]) => {
         const by = (d) => (_e, cx) => this.change((q) => (q[key] = Math.max(min, Math.min(max, Math.round(Math.round(((q[key] ?? s[key]) + d) / step) * step * 100) / 100))), cx);
         return this.row(
           t, title,
-          own(key, s[key], 1) ? "This layout sets its own; yours shows in the others." : null,
+          own(key, s[key], 1) ? "此布局使用自己的样式，你的选择将在其他布局中生效。" : null,
           this.stepper(t, `st-${key}`, `${Math.round(s[key] * 100)}%`, by(-step), by(step)),
         );
       }))
-      .child(fontRow("ui_font", null, "Interface font", s.ui_font_family, DEFAULT_UI_FONT));
+      .child(fontRow("ui_font", null, "界面字体", s.ui_font_family, DEFAULT_UI_FONT));
   }
 
   keyboard(t) {
     const choices = [
-      ["auto", "Automatic (Alt on US keyboards)"],
+      ["auto", "自动（美式键盘使用 Alt）"],
       ["on", "Alt"],
-      ["off", "Types characters"],
-      ["left", "Left Option is Alt"],
-      ["right", "Right Option is Alt"],
+      ["off", "输入字符"],
+      ["left", "左 Option 键作为 Alt"],
+      ["right", "右 Option 键作为 Alt"],
     ];
     return v_flex()
       .w_full()
-      .child(this.heading(t, "Option key"))
-      .child(div().pb(12).text_size(13).text_color(t.dim).child("Use Option for terminal shortcuts or to type accents and special characters."))
+      .child(this.heading(t, "Option 键"))
+      .child(div().pb(12).text_size(13).text_color(t.dim).child("选择 Option 键是用于终端快捷键，还是用于输入重音和特殊字符。"))
       .children(choices.map(([value, label]) => {
         const on = (this.person.option_as_alt ?? "auto") === value;
         return h_flex()
@@ -599,9 +599,9 @@ export default class Settings extends View {
     this.machineLoading = true;
     try {
       const r = await hc(["machine", "ls", "--json"]);
-      if (r.code !== 0) throw new Error(r.stderr || r.stdout || "Couldn't read machines.");
+      if (r.code !== 0) throw new Error(r.stderr || r.stdout || "无法读取主机列表。");
       const list = JSON.parse(r.stdout).machines;
-      if (!Array.isArray(list)) throw new Error("Couldn't read machines.");
+      if (!Array.isArray(list)) throw new Error("无法读取主机列表。");
       this.machineList = list.filter((m) => !m.temporary);
       this.machineError = null;
     } catch (e) {
@@ -626,10 +626,10 @@ export default class Settings extends View {
         const r = await hc(args);
         let payload = null;
         try { payload = JSON.parse(r.stdout || r.stderr); } catch {}
-        if (r.code !== 0) throw new Error(payload?.error?.message || (r.stderr || r.stdout || "It didn't work.").trim());
+        if (r.code !== 0) throw new Error(payload?.error?.message || (r.stderr || r.stdout || "操作失败。").trim());
         const message = action === "update"
-          ? `Updated ${machine}${payload?.version ? ` to hc ${payload.version}` : ""}; its terminals kept running.`
-          : action === "rename" ? `Renamed ${machine} to ${name.trim()}.` : `Removed ${machine}; its terminals keep running there.`;
+          ? `已更新 ${machine}${payload?.version ? ` 至 hc ${payload.version}` : ""}，终端保持运行。`
+          : action === "rename" ? `已重命名 ${machine} to ${name.trim()}.` : `已移除 ${machine}，终端仍在原主机运行。`;
         if (action === "update") this.machineResults[machine] = { message, ok: true };
         else this.machineNotice = message;
       } catch (e) {
@@ -663,14 +663,17 @@ export default class Settings extends View {
   machineRow(t, m, localVersion) {
     const busy = this.machineBusy[m.name];
     const edit = this.machineEdit?.machine === m.name ? this.machineEdit : null;
-    const state = String(m.state ?? "unknown").replace(/[_-]/g, " ");
+    const state = ({
+      connected: "已连接", online: "在线", connecting: "连接中", reconnecting: "正在重连",
+      disconnected: "已断开", asleep: "离线", needs_login: "需要登录",
+    })[m.state] ?? (m.state || "未知");
     const color = ["connected", "online"].includes(m.state) ? t.ansi2 : ["connecting", "reconnecting"].includes(m.state) ? t.working : t.blocked;
     const result = this.machineResults[m.name];
     const controls = h_flex().gap(6).items_center();
-    if (busy) controls.child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12).text_color(t.muted).child(busy === "update" ? "Updating…" : busy === "rename" ? "Renaming…" : "Removing…"));
+    if (busy) controls.child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12).text_color(t.muted).child(busy === "update" ? "正在更新…" : busy === "rename" ? "正在重命名…" : "正在移除…"));
     else {
-      if (this.olderCore(m.version, localVersion)) controls.child(this.button(t, `st-m-update-${m.name}`, "Update", (_e, cx) => this.machineAction(m.name, "update", cx)));
-      for (const [action, label] of [["rename", "Rename"], ["rm", "Remove"]]) {
+      if (this.olderCore(m.version, localVersion)) controls.child(this.button(t, `st-m-update-${m.name}`, "更新", (_e, cx) => this.machineAction(m.name, "update", cx)));
+      for (const [action, label] of [["rename", "重命名"], ["rm", "移除"]]) {
         controls.child(this.button(t, `st-m-${action}-${m.name}`, label, (_e, cx) => {
           this.machineEdit = { machine: m.name, action, name: m.name };
           if (action === "rename") {
@@ -688,34 +691,34 @@ export default class Settings extends View {
         .child(div().w(7).h(7).flex_none().rounded(4).bg(color))
         .child(v_flex().flex_1().min_w(0).gap(3)
           .child(div().text_size(14).text_color(t.foreground).child(m.name))
-          .child(div().text_size(12.5).text_color(t.dim).child(`${m.target ?? ""} · ${state} · ${m.version ? `hc ${m.version}` : "hc version unknown"}`)))
+          .child(div().text_size(12.5).text_color(t.dim).child(`${m.target ?? ""} · ${state} · ${m.version ? `hc ${m.version}` : "hc 版本未知"}`)))
         .when(m.keeps_running_after_logout === false, el => el.child(div().id(`st-m-logout-${m.name}`)
-          .text_color(t.blocked).cursor_pointer().tooltip("Agents stop when you disconnect. Click for the fix.")
+          .text_color(t.blocked).cursor_pointer().tooltip("断开连接时代理会停止。点击查看解决方式。")
           .on_click(() => run("mod.open", { name: "machine-add" })).child("⚠")))
         .child(controls.flex_none()));
     if (m.state === "needs_login") {
       const command = `hc machine login ${m.name}`;
       row.child(v_flex().gap(5)
-        .child(div().text_size(12.5).text_color(t.blocked).child("needs a login: run"))
+        .child(div().text_size(12.5).text_color(t.blocked).child("需要登录。请运行"))
         .child(h_flex().gap(8).items_center()
           .child(div().flex_1().min_w(0).text_size(12.5).text_color(t.foreground).child(command))
-          .child(this.button(t, `st-m-login-copy-${m.name}`, this.copiedLogin === command ? "Copied" : "Copy", (_e, cx) => {
+          .child(this.button(t, `st-m-login-copy-${m.name}`, this.copiedLogin === command ? "已复制" : "复制", (_e, cx) => {
             cx.write_to_clipboard(command);
             this.copiedLogin = command;
             cx.notify();
           }))));
     }
-    if (busy === "update") row.child(div().text_size(12.5).text_color(t.dim).child("Copying this computer's herdr-core. Its terminals keep running."));
+    if (busy === "update") row.child(div().text_size(12.5).text_color(t.dim).child("正在复制本机的 herdr-core，远端终端保持运行。"));
     if (edit && !busy) {
-      const cancel = this.button(t, `st-m-cancel-${m.name}`, "Cancel", (_e, cx) => { this.machineEdit = null; this.handle.focus(); cx.notify(); });
+      const cancel = this.button(t, `st-m-cancel-${m.name}`, "取消", (_e, cx) => { this.machineEdit = null; this.handle.focus(); cx.notify(); });
       if (edit.action === "rm") row.child(v_flex().gap(8)
-        .child(div().text_size(12.5).text_color(t.muted).child(`Remove ${m.name}? Its terminals keep running there.`))
-        .child(h_flex().gap(6).child(cancel).child(this.button(t, `st-m-confirm-${m.name}`, "Remove machine", (_e, cx) => this.machineAction(m.name, "rm", cx)))));
+        .child(div().text_size(12.5).text_color(t.muted).child(`移除 ${m.name}？其终端将继续在原主机运行。`))
+        .child(h_flex().gap(6).child(cancel).child(this.button(t, `st-m-confirm-${m.name}`, "移除主机", (_e, cx) => this.machineAction(m.name, "rm", cx)))));
       else row.child(v_flex().gap(6)
-        .child(div().text_size(12).text_color(t.dim).child("New name (addresses using the old name stop working)"))
+        .child(div().text_size(12).text_color(t.dim).child("新名称（旧名称对应的地址将失效）"))
         .child(h_flex().gap(6).items_center()
           .child(Input.new(this.renameInput).flex_1().min_w(0).h(32).px(10).rounded(7).border_1().border_color(this.renameFocused ? t.accent : t.input).bg(t.background).text_size(13).text_color(t.foreground))
-          .child(cancel).child(this.button(t, `st-m-save-${m.name}`, "Save", (_e, cx) => this.machineAction(m.name, "rename", cx, edit.name)))));
+          .child(cancel).child(this.button(t, `st-m-save-${m.name}`, "保存", (_e, cx) => this.machineAction(m.name, "rename", cx, edit.name)))));
     }
     if (result) row.child(div().text_size(12.5).text_color(result.ok ? t.ansi2 : t.blocked).child(result.message));
     return row;
@@ -724,15 +727,15 @@ export default class Settings extends View {
   machines(t) {
     const version = updates().core.version;
     return v_flex().w_full()
-      .child(this.heading(t, "Machines"))
-      .child(div().pb(8).text_size(12.5).line_height("18px").text_color(t.dim).child("Your computers, reached over ssh. Their terminals keep running when you disconnect."))
-      .child(this.row(t, "This computer", `Connected · ${version ? `hc ${version}` : "hc version unknown"}`, div().w(7).h(7).rounded(4).bg(t.ansi2)))
+      .child(this.heading(t, "主机"))
+      .child(div().pb(8).text_size(12.5).line_height("18px").text_color(t.dim).child("通过 SSH 连接其他主机。断开连接后，远端终端仍会运行。"))
+      .child(this.row(t, "本机", `已连接 · ${version ? `hc ${version}` : "hc 版本未知"}`, div().w(7).h(7).rounded(4).bg(t.ansi2)))
       .children((this.machineList ?? []).map((m) => this.machineRow(t, m, version)))
-      .when(this.machineList === null && !this.machineError, (el) => el.child(h_flex().py(14).gap(8).items_center().child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12.5).text_color(t.dim).child("Reading machines…"))))
-      .when(this.machineList?.length === 0, (el) => el.child(div().py(14).text_size(12.5).text_color(t.dim).child("No other machines yet.")))
+      .when(this.machineList === null && !this.machineError, (el) => el.child(h_flex().py(14).gap(8).items_center().child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12.5).text_color(t.dim).child("正在读取主机列表…"))))
+      .when(this.machineList?.length === 0, (el) => el.child(div().py(14).text_size(12.5).text_color(t.dim).child("尚未添加其他主机。")))
       .when(Boolean(this.machineError), (el) => el.child(div().py(10).text_size(12.5).text_color(t.blocked).child(this.machineError)))
       .when(Boolean(this.machineNotice), (el) => el.child(div().py(10).text_size(12.5).text_color(t.ansi2).child(this.machineNotice)))
-      .child(h_flex().pt(16).child(this.button(t, "st-m-add", "Add a machine", () => run("mod.open", { name: "machine-add" }))));
+      .child(h_flex().pt(16).child(this.button(t, "st-m-add", "添加主机", () => run("mod.open", { name: "machine-add" }))));
   }
 
   // Alerts ---------------------------------------------------------------
@@ -740,21 +743,21 @@ export default class Settings extends View {
   alerts(t) {
     const sounds = this.person.sounds ?? {};
     const on = sounds.enabled !== false;
-    const file = (f) => (f ? f.split(/[\\/]/).pop() : "Herdr's sound");
+    const file = (f) => (f ? f.split(/[\\/]/).pop() : "Herdr 提示音");
     return v_flex()
       .w_full()
-      .child(this.heading(t, "Sounds"))
+      .child(this.heading(t, "声音"))
       .child(
         this.row(
           t,
-          "Play sounds",
-          "When an agent needs you, and when one finishes while you're not looking. A note shows in the corner either way.",
+          "播放提示音",
+          "代理需要你处理，或在你离开时完成任务，Herdr 会播放提示音。窗口角落也会显示通知。",
           this.toggle(t, "st-sounds", on, (_e, cx) => this.change((p) => (p.sounds = { ...(p.sounds ?? {}), enabled: !on }), cx)),
         ),
       )
-      .child(this.row(t, "An agent needs you", file(sounds.blocked), this.button(t, "st-play-blocked", "Play", () => playSound("blocked"))))
-      .child(this.row(t, "An agent finished", file(sounds.done), this.button(t, "st-play-done", "Play", () => playSound("done"))))
-      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("Want your own sounds? Ask your agent to set sounds.done and sounds.blocked in settings.json to an MP3."));
+      .child(this.row(t, "代理需要你处理", file(sounds.blocked), this.button(t, "st-play-blocked", "播放", () => playSound("blocked"))))
+      .child(this.row(t, "代理已完成", file(sounds.done), this.button(t, "st-play-done", "播放", () => playSound("done"))))
+      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("要使用自定义提示音，可以让代理在 settings.json 中将 sounds.done 和 sounds.blocked 指向 MP3 文件。"));
   }
 
   // Updates --------------------------------------------------------------
@@ -765,10 +768,10 @@ export default class Settings extends View {
       const d = new Date(secs * 1000);
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     };
-    const checked = u.checked ? ` Checked at ${at(u.checked)}.` : "";
-    const result = u.checking ? "Checking\u2026" : u.checked
-      ? `Up to date.${checked}`
-      : "No successful check. Check your connection and try again.";
+    const checked = u.checked ? ` 上次检查：${at(u.checked)}.` : "";
+    const result = u.checking ? "正在检查…" : u.checked
+      ? `已是最新版本。${checked}`
+      : "检查更新失败。请检查网络连接后重试。";
     // Pressed: "Checking\u2026" while it looks, then "Up to date" for a moment
     // (a find changes the row instead). One per row: an element shows once.
     const asked = this.asked && Date.now() - this.asked < 3000;
@@ -776,10 +779,10 @@ export default class Settings extends View {
       !u.checks
         ? null
         : u.checking && this.asked
-          ? div().px(12).py(5).text_size(13).text_color(t.dim).child("Checking\u2026")
+          ? div().px(12).py(5).text_size(13).text_color(t.dim).child("正在检查…")
           : asked && u.checked && !u.checking
-            ? div().px(12).py(5).text_size(13).text_color(t.ansi2).child("\u2713 Up to date")
-            : this.button(t, id, "Check now", (_e, cx) => {
+            ? div().px(12).py(5).text_size(13).text_color(t.ansi2).child("✓ 已是最新版本")
+            : this.button(t, id, "立即检查", (_e, cx) => {
                 this.asked = Date.now();
                 run("app.check_updates");
                 cx.notify();
@@ -787,32 +790,32 @@ export default class Settings extends View {
     const primary = (id, label, f) =>
       div().id(id).px(12).py(5).rounded(7).cursor_pointer().bg(t.accent).text_color(t.accent_foreground).text_size(13).font_semibold().hover((s) => s.opacity(0.9)).on_click(f).child(label);
     const app = !u.app.updates
-      ? ["A build from source: it updates with git, not here.", null]
+      ? ["这是源码构建版。可通过 Git 同步源码后重新构建。", null]
       : u.app.ready
-        ? [`${u.app.ready} is ready. Restart to switch now; it also switches when you quit.`, primary("st-app-update", "Restart to update", () => run("app.update"))]
+        ? [`${u.app.ready} 已就绪。重启可以立即切换，退出时也会应用更新。`, primary("st-app-update", "重启并更新", () => run("app.update"))]
         : [result, check("st-check-app")];
     const c = u.core;
     const core = c.managed
-      ? [`Managed by ${c.managed}: update it there.${c.ready ? ` ${c.ready} is available.` : ""}`, u.checks ? check("st-check-core") : null]
+      ? [`由 ${c.managed} 管理，请使用对应工具更新。${c.ready ? ` ${c.ready} 可更新。` : ""}`, u.checks ? check("st-check-core") : null]
       : c.updating
-        ? ["Updating\u2026 your terminals keep running.", null]
+        ? ["正在更新，终端保持运行。", null]
         : c.error
-          ? [`The update failed: ${c.error}`, primary("st-core-retry", "Try again", () => run("app.update_core"))]
+          ? [`更新失败：${c.error}`, primary("st-core-retry", "重试", () => run("app.update_core"))]
           : c.ready
-            ? [`${c.ready} is ready. Your terminals keep running through it.`, primary("st-core-update", "Update herdr-core", () => run("app.update_core"))]
+            ? [`${c.ready} 已就绪，更新期间终端保持运行。`, primary("st-core-update", "更新 herdr-core", () => run("app.update_core"))]
             : u.checks
               ? [result, check("st-check-core")]
-              : ["Not checked: a build from source looks for no updates.", null];
+              : ["源码构建版通过 Git 获取更新。", null];
     return v_flex()
       .w_full()
       .child(this.heading(t, "Herdr"))
       .child(this.row(t, `Herdr ${u.app.version}`, app[0], h_flex().gap(8).flex_none()
-        .child(this.button(t, "st-whats-new", "What's new", () => { closeOverlay(props()?.overlay); run("app.whats_new"); }))
+        .child(this.button(t, "st-whats-new", "更新日志", () => { closeOverlay(props()?.overlay); run("app.whats_new"); }))
         .when(Boolean(app[1]), (el) => el.child(app[1]))))
       .child(div().h(18))
       .child(this.heading(t, "herdr-core"))
       .child(this.row(t, `herdr-core ${c.version ?? ""}`, core[0], core[1] ?? div()))
-      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("Herdr looks for both every hour and tells you in the corner. herdr-core runs your terminals, so they keep running through its updates."));
+      .child(div().pt(12).text_size(12.5).line_height("18px").text_color(t.dim).child("Herdr 每小时检查应用和运行时的更新，并在窗口角落提示。herdr-core 更新期间，终端保持运行。"));
   }
 
 
@@ -844,16 +847,16 @@ export default class Settings extends View {
   privacy(t) {
     const s = telemetry();
     const on = s ? s.setting : this.person.telemetry !== false;
-    const at = (secs) => new Date(secs * 1000).toLocaleString();
-    const why = s?.off_because ? `Off for now: ${s.off_because} is set where Herdr started.` : null;
+    const at = (secs) => new Date(secs * 1000).toLocaleString("zh-CN");
+    const why = s?.off_because ? `已暂停：${s.off_because} 已在 Herdr 的启动环境中设定。` : null;
     const body = v_flex()
       .w_full()
-      .child(this.heading(t, "Usage data"))
+      .child(this.heading(t, "使用数据"))
       .child(
         this.row(
           t,
-          "Share anonymous usage data",
-          why ?? "Once a day: which agents and features you use, how many spaces and tabs, your system and Herdr's version. Never what's in your terminals, never names of files, folders or projects.",
+          "分享匿名使用数据",
+          why ?? "每天统计一次所用的代理、功能、工作区和标签页数量、系统与 Herdr 版本。终端内容及文件、文件夹和项目名称不会被采集。",
           this.toggle(t, "st-telemetry", on, (_e, cx) =>
             this.change((p) => {
               if (on) p.telemetry = false;
@@ -865,20 +868,20 @@ export default class Settings extends View {
       .child(
         this.row(
           t,
-          "What we send",
-          s && !s.sends ? "This build never sends: it's built from source. You can still see what a release would send." : "Exactly what leaves your computer, word for word.",
-          this.button(t, "st-telemetry-show", this.showData ? "Hide" : "Show", (_e, cx) => {
+          "发送的数据",
+          s && !s.sends ? "此源码构建版不发送使用数据。下方可查看正式版会发送的内容。" : "这里显示将从这台电脑发送的原始内容。",
+          this.button(t, "st-telemetry-show", this.showData ? "收起" : "展开", (_e, cx) => {
             this.showData = !this.showData;
             cx.notify();
           }),
         ),
       );
     if (!this.showData) return body;
-    if (!s?.enabled) return body.child(div().pt(14).text_size(13).text_color(t.dim).child("Nothing is collected or sent while it's off."));
+    if (!s?.enabled) return body.child(div().pt(14).text_size(13).text_color(t.dim).child("关闭后将停止采集和发送。"));
     return body
-      .children(s.queued.map((r, i) => this.report(t, `st-tq-${i}`, `Waiting to send: ${r.day}`, "Sent as is, soon.", r)))
-      .when(Boolean(s.draft), (el) => el.child(this.report(t, "st-td", "Today so far", "A draft: it changes until the day ends (UTC), then goes out once.", s.draft)))
-      .when(Boolean(s.last_sent), (el) => el.child(this.report(t, "st-tl", `Last sent: ${s.last_sent.report.day}`, `Sent ${at(s.last_sent.at)}.`, s.last_sent.report)));
+      .children(s.queued.map((r, i) => this.report(t, `st-tq-${i}`, `等待发送：${r.day}`, "将按当前内容发送。", r)))
+      .when(Boolean(s.draft), (el) => el.child(this.report(t, "st-td", "今日统计", "这份草稿会持续更新，在当天结束时（UTC）发送一次。", s.draft)))
+      .when(Boolean(s.last_sent), (el) => el.child(this.report(t, "st-tl", `最近发送：${s.last_sent.report.day}`, `发送于 ${at(s.last_sent.at)}.`, s.last_sent.report)));
   }
 
   // ----------------------------------------------------------------------
@@ -894,7 +897,7 @@ export default class Settings extends View {
       .gap(2)
       .border_r(1)
       .border_color(t.border)
-      .child(div().px(10).pt(6).pb(12).text_size(16).font_semibold().text_color(t.foreground).child("Settings"))
+      .child(div().px(10).pt(6).pb(12).text_size(16).font_semibold().text_color(t.foreground).child("设置"))
       .children(
         SECTIONS.map((s) => {
           const on = s.id === this.section;
@@ -952,7 +955,7 @@ export default class Settings extends View {
         cx.stop_propagation();
         cx.notify();
       })
-      .child(nav.h_full().child(div().flex_1()).child(this.button(t, "st-feedback", "Send feedback", () => { closeOverlay(props()?.overlay); run("app.feedback"); })))
+      .child(nav.h_full().child(div().flex_1()).child(this.button(t, "st-feedback", "发送反馈", () => { closeOverlay(props()?.overlay); run("app.feedback"); })))
       .child(
         // A bar that always shows: the pages are taller than the dialog and
         // people should see that they scroll.

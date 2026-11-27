@@ -70,14 +70,14 @@ test("open render reads spaces and panes once and refreshes both on the next ren
   expect(first).toHaveLength(80);
   for (let i = 0; i < first.length; i++) {
     expect(textOf(first[i])).toContain(`branch-${i}`);
-    expect(textOf(first[i])).toContain(" open ");
+    expect(textOf(first[i])).toContain(" 已打开 ");
   }
   snapshot(spaces.slice(0, -1), panes.map((p: any, i: number) => i === 0 ? { ...p, cwd: "/elsewhere" } : p));
   const second = rowsOf(worktree.render({}).node);
   expect(reads).toEqual({ spaces: 2, panes: 2 });
-  expect(textOf(second[0])).not.toContain(" open ");
-  expect(textOf(second[79])).not.toContain(" open ");
-  expect(textOf(second[1])).toContain(" open ");
+  expect(textOf(second[0])).not.toContain(" 已打开 ");
+  expect(textOf(second[79])).not.toContain(" 已打开 ");
+  expect(textOf(second[1])).toContain(" 已打开 ");
 });
 
 test("open clicks read fresh snapshots once and select an existing space or create one", () => {
@@ -283,7 +283,7 @@ test("remove leaves the main checkout and its space alone on Enter and with a br
       if (!branch) await dialog.enter();
       expect(dialog.closedSpaces).toEqual([]);
       expect(dialog.closedOverlays).toEqual([]);
-      expect(textOf(dialog.worktree.render({}).node)).toContain("This is the repository's main checkout");
+      expect(textOf(dialog.worktree.render({}).node)).toContain("这是仓库的主工作树");
       expect(dialog.worktree.error).toBe("");
       expect(existsSync(main)).toBe(true);
     }
@@ -297,7 +297,7 @@ test("remove shows a locked checkout's reason and keeps the space open", async (
     await dialog.ready;
     await dialog.enter();
     const message = textOf(dialog.worktree.render({}).node);
-    expect(message).toContain("This worktree is locked:");
+    expect(message).toContain("此工作树已锁定：");
     expect(message).toContain("Réservé for another machine");
     expect(message).toContain("Leave this checkout in place");
     expect(dialog.closedSpaces).toEqual([]);
@@ -368,7 +368,7 @@ test("remove warns about new changes and waits for the space's terminal before r
     await dialog.ready;
     await writeFile(join(linked, "untracked.txt"), "uncommitted");
     await dialog.enter();
-    expect(textOf(dialog.worktree.render({}).node)).toContain("It has uncommitted changes");
+    expect(textOf(dialog.worktree.render({}).node)).toContain("此工作树有未提交的更改");
     expect(dialog.closedSpaces).toEqual([]);
     expect(existsSync(join(linked, "untracked.txt"))).toBe(true);
 

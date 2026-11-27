@@ -61,76 +61,84 @@ pub fn dispatch_edit(action: &ShellAction, terminal_focused: bool, window: &mut 
     true
 }
 
-/// GPUI registers the menu named "Window" as the app's windows menu, so
+/// GPUI registers the localized Window menu as the app's windows menu, so
 /// macOS adds its own window items there (tiling, the window list).
 pub(crate) fn menus(layouts: &[String], shown: Option<&str>) -> Vec<Menu> {
     let layout_items = layouts
         .iter()
-        .map(|name| command(name, &format!("layout.switch:{name}")).checked(Some(name.as_str()) == shown))
-        .chain([MenuItem::separator(), command("Next Layout", "layout.switch")]);
+        .map(|name| {
+            let title = match name.as_str() {
+                "main" => "Herdr",
+                "terminals" => "终端",
+                "win98" => "Herdr 98",
+                _ => name.as_str(),
+            };
+            command(title, &format!("layout.switch:{name}")).checked(Some(name.as_str()) == shown)
+        })
+        .chain([MenuItem::separator(), command("切换到下一个布局", "layout.switch")]);
     vec![
         Menu::new("Herdr").items([
-            command("What's New", "app.whats_new"),
-            command("Check for Updates…", "app.settings:updates"),
+            command("更新日志", "app.whats_new"),
+            command("检查更新…", "app.settings:updates"),
             MenuItem::separator(),
-            command("Settings…", "app.settings"),
+            command("设置…", "app.settings"),
             MenuItem::separator(),
-            MenuItem::os_submenu("Services", SystemMenuType::Services),
+            MenuItem::os_submenu("服务", SystemMenuType::Services),
             MenuItem::separator(),
-            command("Hide Herdr", "app.hide"),
-            command("Hide Others", "app.hide_others"),
-            command("Show All", "app.show_all"),
+            command("隐藏 Herdr", "app.hide"),
+            command("隐藏其他应用", "app.hide_others"),
+            command("显示全部应用", "app.show_all"),
             MenuItem::separator(),
-            command("Quit Herdr", "app.quit"),
+            command("退出 Herdr", "app.quit"),
         ]),
-        Menu::new("File").items([
-            command("New Tab", "tab.new"),
-            command("New Space", "space.new"),
+        Menu::new("文件").items([
+            command("新建标签页", "tab.new"),
+            command("新建工作区", "space.new"),
             MenuItem::separator(),
-            command("Split Right", "pane.split:right"),
-            command("Split Down", "pane.split:down"),
+            command("向右分屏", "pane.split:right"),
+            command("向下分屏", "pane.split:down"),
             MenuItem::separator(),
-            command("Rename Tab…", "tab.rename"),
-            command("Rename Space…", "space.rename"),
+            command("重命名标签页…", "tab.rename"),
+            command("重命名工作区…", "space.rename"),
             MenuItem::separator(),
-            command("Close Pane", "pane.close"),
-            command("Close Tab", "tab.close"),
-            command("Close Space", "space.close"),
+            command("关闭窗格", "pane.close"),
+            command("关闭标签页", "tab.close"),
+            command("关闭工作区", "space.close"),
         ]),
-        Menu::new("Edit").items([
-            MenuItem::os_action("Copy", ShellAction::new("terminal.copy"), OsAction::Copy),
-            MenuItem::os_action("Paste", ShellAction::new("terminal.paste"), OsAction::Paste),
+        Menu::new("编辑").items([
+            MenuItem::os_action("复制", ShellAction::new("terminal.copy"), OsAction::Copy),
+            MenuItem::os_action("粘贴", ShellAction::new("terminal.paste"), OsAction::Paste),
             MenuItem::separator(),
-            command("Find…", "terminal.search"),
+            command("查找…", "terminal.search"),
         ]),
-        Menu::new("View").items([
-            MenuItem::submenu(Menu::new("Layout").items(layout_items)),
-            command("Toggle Sidebar", "layout.toggle:sidebar"),
-            command("Zoom Pane", "pane.zoom"),
+        Menu::new("视图").items([
+            MenuItem::submenu(Menu::new("布局").items(layout_items)),
+            command("显示或隐藏侧栏", "layout.toggle:sidebar"),
+            command("放大或还原窗格", "pane.zoom"),
             MenuItem::separator(),
-            command("Actual Size", "app.zoom_reset"),
-            command("Zoom In", "app.zoom_in"),
-            command("Zoom Out", "app.zoom_out"),
+            command("实际大小", "app.zoom_reset"),
+            command("放大", "app.zoom_in"),
+            command("缩小", "app.zoom_out"),
             MenuItem::separator(),
-            command("Command Palette…", "app.palette"),
+            command("命令面板…", "app.palette"),
         ]),
-        Menu::new("Window").items([
-            command("Minimize", "window.minimize"),
-            command("Zoom", "window.maximize"),
+        Menu::new("窗口").items([
+            command("最小化", "window.minimize"),
+            command("缩放", "window.maximize"),
             MenuItem::separator(),
-            command("Go to Tab…", "mod.open:picker"),
-            command("Next Tab", "tab.next"),
-            command("Previous Tab", "tab.prev"),
-            command("Next Space", "space.next"),
-            command("Previous Space", "space.prev"),
-            command("Next Agent", "agent.next"),
-            command("Previous Agent", "agent.prev"),
+            command("跳转到标签页…", "mod.open:picker"),
+            command("下一个标签页", "tab.next"),
+            command("上一个标签页", "tab.prev"),
+            command("下一个工作区", "space.next"),
+            command("上一个工作区", "space.prev"),
+            command("下一个代理", "agent.next"),
+            command("上一个代理", "agent.prev"),
         ]),
-        Menu::new("Help").items([
-            command("Keyboard Shortcuts", "app.help"),
-            command("Welcome to Herdr", "app.welcome"),
+        Menu::new("帮助").items([
+            command("键盘快捷键", "app.help"),
+            command("欢迎使用 Herdr", "app.welcome"),
             MenuItem::separator(),
-            command("Send Feedback…", "app.feedback"),
+            command("发送反馈…", "app.feedback"),
         ]),
     ]
 }
@@ -171,7 +179,7 @@ mod tests {
                 assert!(!crate::commands::shorthand(c, v).is_null(), "{title}: {name} takes no {v:?}");
             }
         }
-        assert!(menus.iter().any(|m| m.name == "Window"));
+        assert!(menus.iter().any(|m| m.name == "窗口"));
     }
 
     /// Items show the key the keymap binds to the same command.
@@ -185,20 +193,20 @@ mod tests {
             let (_, action) = items.iter().find(|(t, _)| t == title).unwrap();
             keymap.bindings_for_action(action.as_ref()).next().map(|b| b.keystrokes()[0].unparse())
         };
-        assert_eq!(key("New Tab").as_deref(), Some("cmd-t"));
-        assert_eq!(key("Split Right").as_deref(), Some("cmd-d"));
-        assert_eq!(key("Settings…").as_deref(), Some("cmd-,"));
-        assert_eq!(key("Quit Herdr").as_deref(), Some("cmd-q"));
-        assert_eq!(key("Copy").as_deref(), Some("cmd-c"));
-        assert_eq!(key("Toggle Sidebar").as_deref(), Some("cmd-b"));
-        assert_eq!(key("Minimize").as_deref(), Some("cmd-m"));
+        assert_eq!(key("新建标签页").as_deref(), Some("cmd-t"));
+        assert_eq!(key("向右分屏").as_deref(), Some("cmd-d"));
+        assert_eq!(key("设置…").as_deref(), Some("cmd-,"));
+        assert_eq!(key("退出 Herdr").as_deref(), Some("cmd-q"));
+        assert_eq!(key("复制").as_deref(), Some("cmd-c"));
+        assert_eq!(key("显示或隐藏侧栏").as_deref(), Some("cmd-b"));
+        assert_eq!(key("最小化").as_deref(), Some("cmd-m"));
     }
 
     #[test]
     fn clipboard_items_show_personal_keys() {
         let keymap = Keymap::new(crate::keys::parse(r#"{"global":{"cmd-alt-c":"terminal.copy","cmd-alt-v":"terminal.paste"}}"#).unwrap());
         let items = all(&menus(&[], None));
-        for (title, shortcut) in [("Copy", "cmd-alt-c"), ("Paste", "cmd-alt-v")] {
+        for (title, shortcut) in [("复制", "cmd-alt-c"), ("粘贴", "cmd-alt-v")] {
             let (_, action) = items.iter().find(|(name, _)| name == title).unwrap();
             assert_eq!(keymap.bindings_for_action(action.as_ref()).next().unwrap().keystrokes()[0], gpui::KeyBinding::new(shortcut, gpui::NoAction, None).keystrokes()[0]);
         }
@@ -207,7 +215,7 @@ mod tests {
     #[test]
     fn the_layout_menu_marks_the_shown_layout() {
         let menus = menus(&["main".into(), "terminals".into()], Some("terminals"));
-        let view = menus.iter().find(|m| m.name == "View").unwrap();
+        let view = menus.iter().find(|m| m.name == "视图").unwrap();
         let Some(MenuItem::Submenu(layouts)) = view.items.first() else { panic!("View starts with Layout") };
         let checked: Vec<String> = layouts
             .items

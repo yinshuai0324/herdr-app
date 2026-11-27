@@ -123,7 +123,7 @@ test("Changes follows a space switch while the last repo's preview never finishe
   expect(h.paths()).toEqual(["b.txt"]);
   await h.show("/plain");
   expect(h.paths()).toEqual([]);
-  expect(h.view.error).toBe("Not a git repository");
+  expect(h.view.error).toBe("当前目录不是 Git 仓库");
 });
 
 test("Changes runs one load at a time in a repo, even when the one it left finishes late", async () => {

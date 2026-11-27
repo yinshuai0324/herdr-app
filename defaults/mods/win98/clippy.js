@@ -9,15 +9,15 @@ import { agents, run, shared, setShared, placement } from "herdr";
 import { C, ASSETS, unit, root, button, label, sfx, own } from "./kit.js";
 
 const TIPS = [
-  "It looks like you're herding agents.\n\nDid you know? Ctrl+Esc opens the Start menu.",
-  "Click a tab's taskbar button while it's\nshown to minimize it (Herdr settles it).\nClick again to bring it back.",
-  "Ctrl+Shift+Esc opens Close Program:\nevery terminal Herdr runs, and End Task.",
-  "Right-click a folder on the desktop to\nrename or close that space.",
-  "Waiting on an agent? Mines is on\nthe desktop. I won't tell anyone.",
-  "Double-click a window's title bar to\nmaximize it. Double-click again to restore.",
-  "Start > Run... opens any command line\nin a new window, like it's 1998.",
-  "Shut Down > Restart in DOS mode\ntakes you to the Terminals layout.",
-  "Log Off takes you back to Herdr's\nnormal layout. I'll miss you.",
+  "看起来你正在管理代理。\n\n按 Ctrl+Esc 可以打开开始菜单。",
+  "点击正在显示的标签页在任务栏上的按钮可将其最小化。再次点击即可恢复。",
+  "按 Ctrl+Shift+Esc 可打开「关闭程序」，查看并结束 Herdr 中的终端。",
+  "右键点击桌面上的文件夹，可重命名或关闭相应工作区。",
+  "代理还在处理？桌面上有扫雷，可以休息一下。",
+  "双击标题栏可最大化窗口，再双击一次即可还原。",
+  "用「开始 › 运行」可以在新窗口执行命令。",
+  "选择「关闭 › 以 DOS 模式重启」可以切换到终端布局。",
+  "注销后会回到 Herdr 的常规布局。",
 ];
 
 export default class Clippy {
@@ -41,24 +41,28 @@ export default class Clippy {
     const right = placement()?.edge !== "left";
     let balloon = null;
     if (a) {
-      const name = a.program?.name ?? a.app ?? "Your agent";
+      const name = a.program?.name ?? a.app ?? "你的代理";
       const where = `'${a.space_name} \\ ${a.tab_name}'`;
       const text =
         a.status === "blocked"
-          ? `It looks like ${name} in\n${where} is waiting for you.\n\nWould you like help?`
-          : `It looks like ${name} finished\nin ${where}.\n\nWant to see what it did?`;
+          ? `看起来 ${name} in\n${where} 正在等你。
+
+需要帮忙吗？`
+          : `看起来 ${name} 已在以下工作区完成任务：${where}。
+
+要查看它做了什么吗？`;
       balloon = this.balloon(u, text, [
-        ["Take me there", () => {
+        ["前往查看", () => {
           run("agent.focus", { terminal: a.address });
           this.dismissed.add(`${a.address}:${a.status}`);
         }],
-        ["Not now", () => this.dismissed.add(`${a.address}:${a.status}`)],
+        ["暂时不用", () => this.dismissed.add(`${a.address}:${a.status}`)],
       ]);
     } else if (this.tip !== null) {
       balloon = this.balloon(u, TIPS[this.tip % TIPS.length], [
-        ["Next tip", () => (this.tip = (this.tip + 1) % TIPS.length)],
-        ["Close", () => (this.tip = null)],
-        ["Hide me", () => setShared("win98.clippy", "off")],
+        ["下一条提示", () => (this.tip = (this.tip + 1) % TIPS.length)],
+        ["关闭", () => (this.tip = null)],
+        ["隐藏助手", () => setShared("win98.clippy", "off")],
       ]);
     }
     // Clean the dismissed list once their agents moved on.

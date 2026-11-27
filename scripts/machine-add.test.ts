@@ -54,7 +54,7 @@ for (const kind of ["hc_missing", "incompatible", "login_needed", "auth_failed",
   test(`${kind} gives terminal instructions without starting a terminal`, async () => {
     const s = setup({ code: 1, stdout: JSON.stringify({ error: { kind, message: "needs attention" } }) });
     await s.add();
-    expect(s.view.state["my-host"]).toContain("Couldn't add my-host here");
+    expect(s.view.state["my-host"]).toContain("无法添加 my-host");
     expect(s.view.state["my-host"]).toContain("`hc machine add my-host`");
     expect(s.view.state["my-host"]).toContain("`hc machine --help`");
     expect(s.view.isAdded("my-host")).toBe(false);
