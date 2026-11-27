@@ -833,8 +833,6 @@ impl AppWindow {
         Self::note_core(&w.core);
         w.sync(window, cx);
         w.restore_focus(window, cx);
-        // The first time the app opens: the frame's welcome (it sets
-        // "frame.welcomed" when you start or skip).
         cx.defer_in(window, |this, window, cx| this.open_kept_windows(window, cx));
         // 0.1.0 kept space colors under its own word.
         if mods::shared("space.colors").is_none()
@@ -844,9 +842,7 @@ impl AppWindow {
         }
         let first_install = mods::shared("frame.welcomed").is_none();
         crate::update_notes::started(first_install);
-        if first_install {
-            cx.defer_in(window, |this, window, cx| this.open_welcome(window, cx));
-        } else if !crate::update_notes::spotlights().is_empty() {
+        if !crate::update_notes::spotlights().is_empty() {
             cx.defer_in(window, |this, window, cx| this.open_whats_new(false, window, cx));
         } else {
             w.update_success = crate::update_notes::changed();

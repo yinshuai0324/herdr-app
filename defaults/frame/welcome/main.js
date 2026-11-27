@@ -1,4 +1,4 @@
-// First-run welcome over the live app; records finished/skipped in frame.welcomed.
+// The welcome guide opened by app.welcome; records finished/skipped in frame.welcomed.
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar } from "gpui-base";
@@ -44,9 +44,6 @@ export default class Welcome extends View {
     this.appearance = null;
     this.handle = cx.focus_handle();
     this.handle.focus();
-    // It opens while the window is still starting, which takes the keyboard
-    // back for its first pane: take it again once that's done.
-    cx.timer.after(600, () => this.handle.focus());
     cx.spawn(async (cx) => {
       try {
         this.appearance = JSON.parse((await readTextFile(`${appHome()}/settings.json`)) ?? "{}").appearance ?? null;

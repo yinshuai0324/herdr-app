@@ -77,7 +77,8 @@ struct Launch {
 impl Launch {
     fn new(mut record: Record, running: &str, first_install: bool) -> Self {
         let previous = record.last_run.clone();
-        let changed = !first_install && previous.as_deref().is_none_or(|v| crate::update::newer(running, v));
+        // A previous launch establishes the baseline even if the welcome was never opened.
+        let changed = previous.as_deref().map_or(!first_install, |v| crate::update::newer(running, v));
         record.last_run = Some(running.into());
         Self { record, previous, running: running.into(), changed }
     }
@@ -312,10 +313,12 @@ mod tests {
         *FETCHED.lock().unwrap() = previous;
     }
     #[test]
-    fn first_install_only_welcomes() {
-        let l = from(None, "1.8.0", true);
-        assert!(!l.changed);
-        assert_eq!(l.record.last_run.as_deref(), Some("1.8.0"));
+    fn first_install_establishes_a_baseline_without_the_welcome() {
+        let first = from(None, "1.8.0", true);
+        assert!(!first.changed);
+        assert_eq!(first.record.last_run.as_deref(), Some("1.8.0"));
+        let upgrade = Launch::new(first.record, "1.9.0", true);
+        assert!(upgrade.changed);
     }
     #[test]
     fn skipped_versions_and_pending_range() {
