@@ -1,0 +1,7 @@
+{
+  "name": "herdr-lan-workspace",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "dependencies": { "ssh2": "1.17.0" }
+}
