@@ -259,12 +259,9 @@ export default class LanWorkspace extends View {
           .border_color(this.remember ? t.accent : t.input).bg(this.remember ? t.accent : t.background)
           .when(this.remember, el => el.child(svg("mods/workspace-chrome/check.svg").size(12).text_color(t.accent_foreground))))
         .child(div().text_size(12).child("在这台 Mac 上记住 SSH 密码")))
-      .child(div().text_size(12).text_color(this.error ? t.blocked : t.muted)
-        .child(this.error || (this.remember
-          ? "密码保存到 Mac 钥匙串。首次连接时请在终端确认 SSH 主机指纹。"
-          : "首次连接时请在终端确认 SSH 主机指纹，并按提示输入密码。")))
+      .when(Boolean(this.error), el => el.child(div().text_size(12).text_color(t.blocked).child(this.error)))
       .child(h_flex().justify_end().gap(8)
         .child(button("lan-cancel", "取消", false, () => this.close()))
-        .child(button("lan-save", this.busy ? "正在保存…" : "保存主机", true, (_event, cx) => this.save(cx))));
+        .child(button("lan-save", this.busy ? "正在保存…" : "保存", true, (_event, cx) => this.save(cx))));
   }
 }
