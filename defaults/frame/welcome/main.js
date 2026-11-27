@@ -453,7 +453,7 @@ export default class Welcome extends View {
           .rounded(10)
           .bg(t.raised)
           .child(div().text_size(13.5).font_semibold().text_color(t.foreground).child("在设置中查看更多布局"))
-          .child(this.para(t, "在「设置 › 外观」可以试用 多点终端 98 等布局，也可让代理复制布局并按需修改。")),
+          .child(this.para(t, "在「设置 › 外观」可以试用 Windows98 等布局，也可让代理复制布局并按需修改。")),
       )
       .child(this.para(t, "遇到问题或有建议？请在「设置 › 发送反馈」告诉我们。"));
   }

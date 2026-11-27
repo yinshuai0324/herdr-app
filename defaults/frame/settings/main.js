@@ -364,7 +364,7 @@ export default class Settings extends View {
           .filter((x) => Boolean(x.light) === light && (x.name === shared("layout") || !layouts().includes(x.name)))
           .map(({ name, colors: c }) => {
           const on = name === current;
-          const label = ({ graphite: "石墨灰", ink: "墨色", moss: "苔绿", paper: "纸白", "atom-one-dark": "Atom One Dark" })[name] ?? name.replace(/-/g, " ");
+          const label = ({ graphite: "石墨灰", ink: "墨色", moss: "苔绿", paper: "纸白", "atom-one-dark": "Atom One Dark", win98: "Windows98" })[name] ?? name.replace(/-/g, " ");
           const dot = (color) => div().w(8).h(8).rounded(4).bg(color);
           return v_flex()
             .id(`st-t-${name}`)

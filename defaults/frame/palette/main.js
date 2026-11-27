@@ -172,7 +172,7 @@ function entries(mods = []) {
     .map(([name, args, group, title, words]) => ({ name, args, group, title, words }));
   const shown = layouts();
   for (const l of shown) {
-    const t = { main: "多点终端", terminals: "终端", win98: "多点终端 98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
+    const t = { main: "亮色", terminals: "深色", win98: "Windows98" }[l] ?? l.charAt(0).toUpperCase() + l.slice(1);
     list.push({ name: "layout.switch", args: { name: l }, group: "Layout", title: `布局：${t}`, words: `look ${l}` });
   }
   // `app.theme` sets the half of its theme's lightness, so only the themes
@@ -181,7 +181,8 @@ function entries(mods = []) {
   const dark = Boolean(settings().dark);
   for (const { name, light } of themes()) {
     if (Boolean(light) === dark || (name !== shared("layout") && shown.includes(name))) continue;
-    list.push({ name: "app.theme", args: { name }, group: "App", title: `主题：${name.replace(/-/g, " ")}`, words: "colors look" });
+    const title = name === "win98" ? "Windows98" : name.replace(/-/g, " ");
+    list.push({ name: "app.theme", args: { name }, group: "App", title: `主题：${title}`, words: "colors look" });
   }
   // Anything new in the app shows up too, until it gets a better name here.
   const named = new Set(NAMED.map(([n]) => n));

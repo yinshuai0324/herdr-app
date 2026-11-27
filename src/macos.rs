@@ -68,9 +68,9 @@ pub(crate) fn menus(layouts: &[String], shown: Option<&str>) -> Vec<Menu> {
         .iter()
         .map(|name| {
             let title = match name.as_str() {
-                "main" => crate::PRODUCT_NAME,
-                "terminals" => "终端",
-                "win98" => "多点终端 98",
+                "main" => "亮色",
+                "terminals" => "深色",
+                "win98" => "Windows98",
                 _ => name.as_str(),
             };
             command(title, &format!("layout.switch:{name}")).checked(Some(name.as_str()) == shown)
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn the_layout_menu_marks_the_shown_layout() {
-        let menus = menus(&["main".into(), "terminals".into()], Some("terminals"));
+        let menus = menus(&["main".into(), "terminals".into(), "win98".into()], Some("win98"));
         let view = menus.iter().find(|m| m.name == "视图").unwrap();
         let Some(MenuItem::Submenu(layouts)) = view.items.first() else { panic!("View starts with Layout") };
         let checked: Vec<String> = layouts
@@ -225,6 +225,11 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(checked, ["terminals"]);
+        assert_eq!(checked, ["Windows98"]);
+        let titles: Vec<_> = layouts.items.iter().take(3).filter_map(|i| match i {
+            MenuItem::Action { name, .. } => Some(name.to_string()),
+            _ => None,
+        }).collect();
+        assert_eq!(titles, ["亮色", "深色", "Windows98"]);
     }
 }

@@ -183,15 +183,15 @@ the highlighted line shows where it will land.
 
 Each file is one whole window. `layout.switch` (`ctrl-shift-l`) cycles
 through them, `layout.switch {name}` picks one; `shared("layout")` is the
-shown one's name. Herdr ships `main` ("Herdr": spaces by machine and the
+shown one's name. Herdr ships `main` ("亮色": spaces by machine and the
 agents list on the left, `workspace-chrome`; tabs as pills with a + menu
 that starts a terminal or any installed agent, `new-menu`; panes as cards
 with a header; Files and Changes panels on the right, `files` and
 `changes`, opened from the tab bar and remembered per space (which ones:
 shared `"workspace.panels"`, set by the welcome); a status bar,
-`workspace-status`), and as examples `terminals` ("Terminals": tabs in
+`workspace-status`), and as examples `terminals` ("深色": tabs in
 the title bar, panes as cards, a space picker) and `win98`
-("Herdr 98": a whole desktop in one mod, `win98`). Add a layout by
+("Windows98": a whole desktop in one mod, `win98`). Add a layout by
 writing a new file. The Files panel supports Windows folder paths with spaces,
 parentheses and apostrophes, and preserves Unicode file and folder names
 (including Chinese). Directory links expand as folders; their contents load
@@ -199,8 +199,8 @@ only when expanded.
 
 **Herdr's own layouts and mods are read-only.** They are replaced whole
 on every start. Use settings.json for look (fonts, sizes, theme, colors,
-sounds), where the layout leaves them unset. Herdr (main) has no look of
-its own, so your settings decide it; Herdr 98 and Terminals bring their own
+sounds), where the layout leaves them unset. 亮色 (main) has no look of
+its own, so your settings decide it; Windows98 and 深色 bring their own
 look. The theme picker overrides any layout. To change a shipped layout's
 look beyond that, or its structure/code, clone it and edit the clone:
 
@@ -367,14 +367,14 @@ layout's look and a block can differ:
   diff's (px at zoom 1); `ui_font`: the mods' (their text sizes are their own,
   in px, and follow zoom). Optional: without them a layout uses settings.json's,
   else Herdr's (JetBrains Mono 14, Geist).
-  Herdr (main) leaves these unset; Terminals sets text size 15, and Herdr 98
+  亮色 (main) leaves these unset; 深色 sets text size 15, and Windows98
   brings its own fonts.
   JetBrains Mono, Geist Mono and Geist ship with Herdr; any installed font
   works (a terminal font the machine lacks falls back to JetBrains Mono).
   A layout brings its own fonts: `.ttf`/`.otf` files in a mod's `fonts/`
   folder (or the home's `fonts/`) load at start and on the next look change,
-  so a layout and its mod folder travel together (Herdr 98's do: its pixel
-  fonts are in `mods/win98/fonts/`).
+  so a layout and its mod folder travel together. The Windows98 layout
+  keeps its pixel fonts in `mods/win98/fonts/`.
 - `font_weight` (100..900): the terminals' text weight. Default 500
   (Medium); 400 is Regular, 300 Light, using the family's nearest face.
 - `font_weight_bold` (100..900): bold terminal weight (default 700), using the nearest face.
