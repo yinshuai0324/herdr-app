@@ -606,7 +606,7 @@ The main ones:
   `space.close {id?, confirmed?}`, `space.rename {id?, name}` ("": Herdr's name again),
   `space.move {id, index}`, `space.select {index | id}`, `space.next`, `space.prev`.
   With no `argv`, the target core chooses that machine's default shell (PowerShell 7 when available on Windows).
-- On the Mac LAN workbench, save an “SSH（共享目录）” host in “添加主机” and
+- On the Mac LAN workbench, “添加主机” opens “公司内部登录” by default. Save a host and
   select it when creating a workspace. The optional password in the host
   form is kept in the Mac Keychain and used after SSH host verification.
   Use `space.new {machine: "lan:<id>"}`

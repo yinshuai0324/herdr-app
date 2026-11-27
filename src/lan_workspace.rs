@@ -105,6 +105,10 @@ pub fn target_id(target: &str) -> Option<&str> {
     target.strip_prefix("lan:")
 }
 
+pub fn available() -> bool {
+    cfg!(target_os = "macos") && Runtime::load().is_ok()
+}
+
 fn hosts() -> Vec<Host> {
     let Some(Value::Array(rows)) = crate::mods::shared(HOSTS) else {
         return Vec::new();
@@ -118,7 +122,7 @@ pub fn has_hosts() -> bool {
 
 pub fn host(id: &str) -> Result<Host, String> {
     hosts().into_iter().find(|host| host.id == id)
-        .ok_or_else(|| "找不到该共享目录主机。".into())
+        .ok_or_else(|| "找不到该公司内部主机。".into())
 }
 
 impl Host {
@@ -128,7 +132,7 @@ impl Host {
             [&runtime.node, &runtime.workspace, &runtime.keychain, &runtime.smb_server, &runtime.state_dir, &self.directory]
                 .iter().any(|path| !Path::new(path).is_absolute())
         {
-            return Err("共享目录主机需要在 Mac 上使用有效的本机目录和运行配置。".into());
+            return Err("公司内部登录需要有效的 Mac 本机目录和运行配置。".into());
         }
         let mut remote = argv.unwrap_or_default();
         if !remote.is_empty() {

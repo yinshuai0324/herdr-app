@@ -203,7 +203,7 @@ export default class LanWorkspace extends View {
           .child(v_flex().flex_1().min_w(0).gap(3)
             .child(div().truncate().text_size(13).child(target.title))
             .when(Boolean(target.detail), el => el.child(div().truncate().text_size(11).text_color(t.muted).child(target.detail))))
-          .when(Boolean(target.detail), el => el.child(div().text_size(11).text_color(t.muted).child("共享目录"))))));
+          .when(Boolean(target.detail), el => el.child(div().text_size(11).text_color(t.muted).child("公司内部登录"))))));
   }
 
   field(key, accessory) {
@@ -224,11 +224,11 @@ export default class LanWorkspace extends View {
       .bg(t.popover).text_color(t.foreground);
     if (this.action === "pick") return root.child(this.picker(t));
     if ((this.action === "edit" || this.action === "remove") && !this.entry) {
-      return root.child(div().text_size(13).child("找不到该共享目录主机。"))
+      return root.child(div().text_size(13).child("找不到该公司内部主机。"))
         .child(h_flex().justify_end().child(button("lan-close", "关闭", false, () => this.close())));
     }
     if (this.action === "remove") {
-      return root.child(div().text_size(16).font_semibold().child("移除共享目录主机？"))
+      return root.child(div().text_size(16).font_semibold().child("移除公司内部主机？"))
         .child(div().text_size(12).text_color(t.muted).child(this.entry.name))
         .when(Boolean(this.error), el => el.child(div().text_size(12).text_color(t.blocked).child(this.error)))
         .child(h_flex().justify_end().gap(8)
@@ -236,14 +236,14 @@ export default class LanWorkspace extends View {
           .child(button("lan-remove", this.busy ? "正在移除…" : "移除", true, (_event, cx) => this.remove(cx))));
     }
     return root
-      .child(div().text_size(16).font_semibold().child(this.action === "edit" ? "编辑共享目录主机" : "添加主机"))
+      .child(div().text_size(16).font_semibold().child(this.action === "edit" ? "编辑公司内部主机" : "添加主机"))
       .when(this.action === "add", el => el.child(h_flex().gap(6).items_center().text_size(12)
+        .child(div().px(10).py(5).rounded(6).bg(t.hover).child("公司内部登录"))
         .child(div().id("lan-ordinary-ssh").px(10).py(5).rounded(6).cursor_pointer().text_color(t.muted)
           .hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => {
             this.close();
-            run("mod.open", { name: "machine-add" });
-          }).child("SSH 主机"))
-        .child(div().px(10).py(5).rounded(6).bg(t.hover).child("SSH（共享目录）"))))
+            openOverlay({ mod: "machine-add", kind: "dialog", width: 560 });
+          }).child("SSH 主机"))))
       .child(h_flex().gap(8).child(this.field("host")).child(this.field("username")).child(this.field("port")))
       .child(this.field("directory", button("lan-folder", "选取…", false, (_event, cx) => this.chooseFolder(cx))))
       .when(this.remember, el => el.child(this.field("password")))

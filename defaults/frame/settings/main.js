@@ -694,7 +694,7 @@ export default class Settings extends View {
           .child(div().text_size(12.5).text_color(t.dim).child(`${m.target ?? ""} · ${state} · ${m.version ? `hc ${m.version}` : "hc 版本未知"}`)))
         .when(m.keeps_running_after_logout === false, el => el.child(div().id(`st-m-logout-${m.name}`)
           .text_color(t.blocked).cursor_pointer().tooltip("断开连接时代理会停止。点击查看解决方式。")
-          .on_click(() => run("mod.open", { name: "machine-add" })).child("⚠")))
+          .on_click(() => openOverlay({ mod: "machine-add", kind: "dialog", width: 560 })).child("⚠")))
         .child(controls.flex_none()));
     if (m.state === "needs_login") {
       const command = `hc machine login ${m.name}`;
@@ -736,7 +736,7 @@ export default class Settings extends View {
       .child(div().pb(8).text_size(12.5).line_height("18px").text_color(t.dim).child("通过 SSH 连接其他主机，在工作区查看和操作终端。"))
       .child(this.row(t, "本机", `已连接 · ${version ? `hc ${version}` : "hc 版本未知"}`, div().w(7).h(7).rounded(4).bg(t.ansi2)))
       .children((this.machineList ?? []).map((m) => this.machineRow(t, m, version)))
-      .children(sharedHosts.map(host => this.row(t, host.name, `共享目录 · ${host.directory}`,
+      .children(sharedHosts.map(host => this.row(t, host.name, `公司内部登录 · ${host.directory}`,
         h_flex().gap(6).child(this.button(t, "st-lan-edit-" + host.id, "编辑", () => manage(host, "edit")))
           .child(this.button(t, "st-lan-remove-" + host.id, "移除", () => manage(host, "remove"))))))
       .when(this.machineList === null && !this.machineError, (el) => el.child(h_flex().py(14).gap(8).items_center().child(svg("mods/workspace-chrome/spinner.svg").size(12).text_color(t.working).spin(900)).child(div().text_size(12.5).text_color(t.dim).child("正在读取主机列表…"))))

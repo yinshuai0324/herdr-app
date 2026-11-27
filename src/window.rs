@@ -3722,6 +3722,13 @@ impl AppWindow {
                 let Some(f) = self.view_mod(name) else { return self.fail(format!("no mod folder {name:?}")) };
                 let mut spec = mod_overlay(&f.dir);
                 spec["mod"] = json!(name);
+                if name == "machine-add"
+                    && let Some(lan) = self.view_mod("lan-workspace").filter(|_| crate::lan_workspace::available())
+                {
+                    spec = mod_overlay(&lan.dir);
+                    spec["mod"] = json!("lan-workspace");
+                    spec["props"] = json!({ "action": "add" });
+                }
                 // One popup per mod: running mod.open again toggles it, like app.settings.
                 let id = format!("mod-{name}");
                 if self.overlays.iter().any(|o| o.id == id) {

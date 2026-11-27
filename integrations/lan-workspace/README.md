@@ -1,6 +1,6 @@
 # Herdr LAN workspace
 
-This macOS integration adds “SSH（共享目录）” as a host type in this fork of
+This macOS integration adds “公司内部登录” as a host type in this fork of
 Herdr. The local launcher stages the SMB runtime and the host picker.
 
 To open an isolated workbench:
@@ -19,7 +19,7 @@ command-line tools. On first launch the launcher also builds the pinned SMB
 helper, using a checksum-verified Go toolchain. The toolchain and SMB library
 are needed on the local Mac only.
 
-In “添加主机”, choose “SSH（共享目录）”, enter the remote Mac's IP address, SSH
+“添加主机” opens “公司内部登录” by default. Enter the remote Mac's IP address, SSH
 user and port, and choose a local project. You can enter the SSH password
 before saving the host. Herdr stores it in the Mac Keychain. Select the host in
 “新建工作区”. Its first terminal, new tabs, and splits open on the remote Mac

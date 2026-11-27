@@ -214,7 +214,7 @@ export default class Picker extends View {
           .on_click(() => this.go(r))
           .child(div().w(12).child("+"))
           .child(div().flex_1().truncate().child(label))
-          .when(Boolean(r.sharedHost), el => el.child(div().text_size(10.5).text_color(t.dim).child("共享目录")));
+          .when(Boolean(r.sharedHost), el => el.child(div().text_size(10.5).text_color(t.dim).child("公司内部登录")));
       }
       const who = r.mine.map((a) => a.program?.name ?? "代理").join(" · ");
       const here = r.w.active && r.ctx.active;
